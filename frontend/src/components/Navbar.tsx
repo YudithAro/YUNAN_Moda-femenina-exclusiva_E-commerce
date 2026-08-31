@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Button } from "./ui/button";
 import { ShoppingBag, User, LogOut, LayoutDashboard, Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -9,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     setIsLoggedIn(!!localStorage.getItem("token"));
@@ -46,10 +48,10 @@ export function Navbar() {
         
         {/* Desktop Links */}
         <div className="hidden md:flex items-center space-x-8 lg:space-x-10 text-xs font-semibold tracking-widest uppercase text-gray-300">
-          <Link href="/" className="hover:text-pink-400 transition-colors">Inicio</Link>
-          <Link href="/coleccion" className="hover:text-pink-400 transition-colors">Colección</Link>
-          <Link href="/novedades" className="hover:text-pink-400 transition-colors">Novedades</Link>
-          <Link href="/nosotros" className="hover:text-pink-400 transition-colors">Sobre Nosotros</Link>
+          <Link href="/" className={`transition-colors py-2 border-b-2 ${pathname === '/' ? 'text-[#cfa873] border-[#cfa873]' : 'border-transparent hover:text-pink-400'}`}>Inicio</Link>
+          <Link href="/coleccion" className={`transition-colors py-2 border-b-2 ${pathname.startsWith('/coleccion') ? 'text-[#cfa873] border-[#cfa873]' : 'border-transparent hover:text-pink-400'}`}>Colección</Link>
+          <Link href="/novedades" className={`transition-colors py-2 border-b-2 ${pathname.startsWith('/novedades') ? 'text-[#cfa873] border-[#cfa873]' : 'border-transparent hover:text-pink-400'}`}>Novedades</Link>
+          <Link href="/nosotros" className={`transition-colors py-2 border-b-2 ${pathname.startsWith('/nosotros') ? 'text-[#cfa873] border-[#cfa873]' : 'border-transparent hover:text-pink-400'}`}>Sobre Nosotros</Link>
         </div>
         
         {/* Right Actions */}
@@ -102,10 +104,10 @@ export function Navbar() {
             className="md:hidden border-t border-white/5 bg-[#0a0508]/95 backdrop-blur-xl overflow-hidden"
           >
             <div className="flex flex-col space-y-4 p-6 text-sm font-semibold tracking-widest uppercase text-gray-300">
-              <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-pink-400 transition-colors py-2">Inicio</Link>
-              <Link href="/coleccion" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-pink-400 transition-colors py-2">Colección</Link>
-              <Link href="/novedades" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-pink-400 transition-colors py-2">Novedades</Link>
-              <Link href="/nosotros" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-pink-400 transition-colors py-2">Sobre Nosotros</Link>
+              <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className={`transition-colors py-2 ${pathname === '/' ? 'text-[#cfa873]' : 'hover:text-pink-400'}`}>Inicio</Link>
+              <Link href="/coleccion" onClick={() => setIsMobileMenuOpen(false)} className={`transition-colors py-2 ${pathname.startsWith('/coleccion') ? 'text-[#cfa873]' : 'hover:text-pink-400'}`}>Colección</Link>
+              <Link href="/novedades" onClick={() => setIsMobileMenuOpen(false)} className={`transition-colors py-2 ${pathname.startsWith('/novedades') ? 'text-[#cfa873]' : 'hover:text-pink-400'}`}>Novedades</Link>
+              <Link href="/nosotros" onClick={() => setIsMobileMenuOpen(false)} className={`transition-colors py-2 ${pathname.startsWith('/nosotros') ? 'text-[#cfa873]' : 'hover:text-pink-400'}`}>Sobre Nosotros</Link>
             </div>
           </motion.div>
         )}

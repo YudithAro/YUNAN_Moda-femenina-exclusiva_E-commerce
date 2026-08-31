@@ -8,14 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
-const MOCK_PRODUCTS = [
-  { id: 1, name: "Casaca Denim Premium", category: "Casacas", price: 129.99, image: "https://images.unsplash.com/photo-1550614000-4b95d466f397?auto=format&fit=crop&q=80&w=600" },
-  { id: 2, name: "Vestido Elegante Noche", category: "Vestidos", price: 189.99, image: "https://images.unsplash.com/photo-1539008835657-9e8e9680c956?auto=format&fit=crop&q=80&w=600" },
-  { id: 3, name: "Falda Larga Seda", category: "Faldas", price: 95.00, image: "https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?auto=format&fit=crop&q=80&w=600" },
-  { id: 4, name: "Blusa Blanca Clásica", category: "Tops", price: 55.99, image: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&q=80&w=600" },
-  { id: 5, name: "Pantalón Sastre Negro", category: "Pantalones", price: 110.00, image: "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&q=80&w=600" },
-  { id: 6, name: "Blazer Formal Rosado", category: "Casacas", price: 145.50, image: "https://images.unsplash.com/photo-1548624149-f9b1859aa7d0?auto=format&fit=crop&q=80&w=600" }
-];
+
 
 export default function ColeccionPage() {
   const [mounted, setMounted] = useState(false);
@@ -27,16 +20,12 @@ export default function ColeccionPage() {
     fetch("http://localhost:3000/products")
       .then((res) => res.json())
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setProducts(data);
-        } else {
-          setProducts(MOCK_PRODUCTS);
-        }
+        setProducts(Array.isArray(data) ? data : []);
         setLoading(false);
       })
       .catch((err) => {
         console.error("Error fetching products:", err);
-        setProducts(MOCK_PRODUCTS);
+        setProducts([]);
         setLoading(false);
       });
   }, []);
@@ -80,6 +69,25 @@ export default function ColeccionPage() {
                <div className="w-12 h-12 border-4 border-[#cfa873]/30 border-t-[#cfa873] rounded-full animate-spin"></div>
                <p className="text-[#cfa873] font-serif tracking-widest text-sm uppercase">Preparando colección...</p>
              </div>
+          ) : products.length === 0 ? (
+              <div className="col-span-full flex flex-col items-center justify-center py-40 px-8">
+                <div className="relative mb-10">
+                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-[#cfa873]/10 to-[#cfa873]/5 flex items-center justify-center border border-[#cfa873]/20 shadow-[0_0_80px_rgba(207,168,115,0.1)]">
+                    <Sparkles className="h-14 w-14 text-[#cfa873]/40" />
+                  </div>
+                  <div className="absolute -inset-4 rounded-full border border-[#cfa873]/10 animate-pulse"></div>
+                  <div className="absolute -inset-8 rounded-full border border-[#cfa873]/5"></div>
+                </div>
+                <h3 className="font-serif text-3xl text-white/90 mb-4 text-center">Colección en preparación</h3>
+                <p className="text-gray-500 text-base max-w-md text-center leading-relaxed mb-10 font-light">
+                  Estamos preparando piezas exclusivas para ti. Vuelve pronto para descubrir nuestra nueva colección.
+                </p>
+                <Link href="/">
+                  <Button variant="outline" className="border-[#cfa873]/30 text-[#cfa873] hover:bg-[#cfa873] hover:text-[#030001] rounded-full px-10 py-6 tracking-[0.3em] uppercase text-[10px] font-bold transition-all duration-500">
+                    Volver al Inicio
+                  </Button>
+                </Link>
+              </div>
           ) : (
             products.map((product, index) => {
               const productImg = (product.images && product.images.length > 0) ? product.images[0] : (product.image || "https://images.unsplash.com/photo-1550614000-4b95d466f397?auto=format&fit=crop&q=80&w=600");
@@ -96,7 +104,7 @@ export default function ColeccionPage() {
                   }}
                   className="h-full"
                 >
-                  <Card className="flex flex-col overflow-hidden border-white/5 bg-[#080305]/80 backdrop-blur-xl hover:border-[#cfa873]/40 transition-all duration-700 group rounded-[2.5rem] h-full shadow-[0_10px_40px_rgba(0,0,0,0.8)] hover:shadow-[0_20px_50px_rgba(207,168,115,0.15)] hover:-translate-y-3">
+                  <Card className="flex flex-col overflow-hidden border-white/5 bg-[#080305]/80 backdrop-blur-xl hover:border-[#cfa873]/40 transition-all duration-700 group rounded-[2.5rem] h-full shadow-[0_10px_40px_rgba(0,0,0,0.8)] hover:shadow-[0_20px_50px_rgba(207,168,115,0.15)] hover:-translate-y-3 p-0 border-0">
                     <div className="aspect-[2/3] relative overflow-hidden bg-[#030001]">
                       <img 
                         src={productImg} 

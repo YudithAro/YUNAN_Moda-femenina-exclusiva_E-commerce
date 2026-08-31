@@ -3,8 +3,9 @@ import * as bcrypt from 'bcrypt';
 import pg from 'pg';
 import crypto from 'crypto';
 
+import 'dotenv/config';
 const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:ZAanthony200399@localhost:5432/tienda_ropa?schema=public'
+  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:ZAanthony200399@localhost:5432/tienda_ropa?schema=public', ssl: process.env.DATABASE_URL?.includes('supabase') ? { rejectUnauthorized: false } : undefined
 });
 
 @Injectable()

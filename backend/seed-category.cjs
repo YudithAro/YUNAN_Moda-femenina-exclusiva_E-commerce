@@ -1,8 +1,10 @@
+require('dotenv').config();
 const { Client } = require('pg');
 
 async function seedCategory() {
   const client = new Client({
-    connectionString: 'postgresql://postgres:ZAanthony200399@localhost:5432/tienda_ropa'
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
   });
   await client.connect();
   

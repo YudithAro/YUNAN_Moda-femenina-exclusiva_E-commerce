@@ -129,6 +129,17 @@
   }
 }
 
+/* Hide number input spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 @keyframes floatUp {
   0% { transform: translateY(0) scale(1); opacity: 0; }
   20% { opacity: 0.6; }

@@ -14,14 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const MOCK_PRODUCTS = [
-  { id: "1", name: "Casaca Denim Premium", category: "Casacas", price: 129.99, description: "Una casaca espectacular que resalta tu figura con detalles premium.", images: ["https://images.unsplash.com/photo-1550614000-4b95d466f397?auto=format&fit=crop&q=80&w=600"] },
-  { id: "2", name: "Vestido Elegante Noche", category: "Vestidos", price: 189.99, description: "Vestido largo de noche, perfecto para galas y eventos formales. Elegancia pura.", images: ["https://images.unsplash.com/photo-1539008835657-9e8e9680c956?auto=format&fit=crop&q=80&w=600"] },
-  { id: "3", name: "Falda Larga Seda", category: "Faldas", price: 95.00, description: "Falda de seda fluida que acompaña cada uno de tus movimientos.", images: ["https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?auto=format&fit=crop&q=80&w=600"] },
-  { id: "4", name: "Blusa Blanca Clásica", category: "Tops", price: 55.99, description: "Blusa indispensable en cualquier guardarropa de lujo.", images: ["https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&q=80&w=600"] },
-  { id: "5", name: "Pantalón Sastre Negro", category: "Pantalones", price: 110.00, description: "Corte perfecto para proyectar seguridad en cada paso.", images: ["https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&q=80&w=600"] },
-  { id: "6", name: "Blazer Formal Rosado", category: "Casacas", price: 145.50, description: "Toque de color para ocasiones formales, sin perder la seriedad.", images: ["https://images.unsplash.com/photo-1548624149-f9b1859aa7d0?auto=format&fit=crop&q=80&w=600"] }
-];
+
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -42,11 +35,8 @@ export default function ProductDetailPage() {
         setLoading(false);
       })
       .catch(err => {
-        console.error("Fetch failed, falling back to mock:", err);
-        const mockProduct = MOCK_PRODUCTS.find(p => p.id === String(params.id));
-        if (mockProduct) {
-          setProduct(mockProduct);
-        }
+        console.error("Error loading product:", err);
+        setProduct(null);
         setLoading(false);
       });
   }, [params.id]);

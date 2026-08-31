@@ -79,36 +79,24 @@ export default function AdminDashboard() {
           { name: "May", total: 0 },
           { name: "Jun", total: 0 }
         ];
-      } else if (chartData.length < 6) {
-         // Simular algunos datos de relleno para que la gráfica no se vea vacía en desarrollo
-         chartData = [
-           { name: "Ene", total: 400 },
-           { name: "Feb", total: 300 },
-           { name: "Mar", total: 550 },
-           { name: "Abr", total: 200 },
-           { name: "May", total: 700 },
-           ...chartData
-         ];
       }
       
-      // Asegurar que existan datos por estado y top productos (si el backend aún no los manda, mockeamos)
+      const statusMap: Record<string, string> = {
+        PENDING: "PENDIENTE",
+        PAID: "PAGADO",
+        SHIPPED: "ENVIADO",
+        DELIVERED: "ENTREGADO",
+        CANCELLED: "CANCELADO"
+      };
+
+      // Asegurar que existan datos por estado y top productos (sin mockear datos irreales)
       const ordersByStatus = data.ordersByStatus && data.ordersByStatus.length > 0 
-        ? data.ordersByStatus 
-        : [
-            { name: "PENDING", value: 10 },
-            { name: "PAID", value: 25 },
-            { name: "SHIPPED", value: 5 },
-            { name: "DELIVERED", value: 15 },
-          ];
+        ? data.ordersByStatus.map((s: any) => ({ ...s, name: statusMap[s.name] || s.name }))
+        : [];
           
       const topProducts = data.topProducts && data.topProducts.length > 0
         ? data.topProducts
-        : [
-            { name: "Vestido Elegante Noche", sold: 45 },
-            { name: "Blusa Blanca Clásica", sold: 30 },
-            { name: "Casaca Denim Premium", sold: 25 },
-            { name: "Falda Larga Seda", sold: 18 },
-          ];
+        : [];
 
       setMetrics({ ...data, monthlyRevenue: chartData, ordersByStatus, topProducts });
     } catch (error) {
