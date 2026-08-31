@@ -1,0 +1,61 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import pg from 'pg';
+import crypto from 'crypto';
+
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:ZAanthony200399@localhost:5432/tienda_ropa?schema=public'
+});
+
+@Injectable()
+export class CouponsService {
+  async findAll() {
+    const { rows } = await pool.query(`
+      SELECT * FROM "coupon"
+      ORDER BY "createdAt" DESC
+    `);
+    return rows;
+  }
+
+  async findOne(id: string) {
+    const { rows } = await pool.query(`
+      SELECT * FROM "coupon" WHERE id = $1
+    `, [id]);
+    
+    if (rows.length === 0) throw new NotFoundException('Coupon not found');
+    return rows[0];
+  }
+
+  async create(data: any) {
+    const id = crypto.randomUUID();
+    
+    const { rows } = await pool.query(`
+      INSERT INTO "coupon" (id, code, discount, type, active, "createdAt", "updatedAt")
+      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      RETURNING *
+    `, [id, data.code.toUpperCase(), data.discount, data.type || 'PERCENTAGE', data.active !== undefined ? data.active : true]);
+    
+    return rows[0];
+  }
+
+  async update(id: string, data: any) {
+    const { rows } = await pool.query(`
+      UPDATE "coupon"
+      SET code = COALESCE($1, code),
+          discount = COALESCE($2, discount),
+          type = COALESCE($3, type),
+          active = COALESCE($4, active),
+          "updatedAt" = NOW()
+      WHERE id = $5
+      RETURNING *
+    `, [data.code?.toUpperCase(), data.discount, data.type, data.active, id]);
+    
+    return rows[0];
+  }
+
+  async remove(id: string) {
+    const { rows } = await pool.query(`
+      DELETE FROM "coupon" WHERE id = $1 RETURNING *
+    `, [id]);
+    return rows[0];
+  }
+}
