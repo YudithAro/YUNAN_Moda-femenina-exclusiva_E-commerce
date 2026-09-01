@@ -43,7 +43,7 @@ export default function CategoriesPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch("http://localhost:3000/categories");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/categories`);
       const data = await res.json();
       setCategories(data);
     } catch (error) {
@@ -65,7 +65,7 @@ export default function CategoriesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetch("http://localhost:3000/categories", {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/categories`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -86,7 +86,7 @@ export default function CategoriesPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("¿Seguro que quieres eliminar esta categoría? (Los productos asociados podrían perder su categoría)")) return;
     try {
-      await fetch(`http://localhost:3000/categories/${id}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/categories/${id}`, {
         method: "DELETE",
       });
       fetchCategories();

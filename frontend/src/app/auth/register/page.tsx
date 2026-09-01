@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/lib/supabase";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -28,25 +29,36 @@ export default function RegisterPage() {
     setErrorMsg("");
     
     const formData = new FormData(e.currentTarget);
-    const name = formData.get("name");
-    const email = formData.get("email");
-    const password = formData.get("password");
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
     try {
-      const res = await fetch("http://localhost:3000/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role: "USER" }),
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name }
+        }
       });
 
-      if (!res.ok) {
-        throw new Error("No se pudo crear la cuenta (el correo ya podría estar en uso)");
+      if (error) {
+        throw error;
       }
 
-      const data = await res.json();
-      localStorage.setItem("token", data.access_token);
-      // Redirigir al inicio o a la tienda (como es demo, lo mandamos al panel por ahora si es que quieren)
-      window.location.href = '/'; 
+      // Sync user with backend
+      if (data?.user) {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/auth/sync-user`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: data.user.id, email, name }),
+        });
+
+        if (data.session) {
+          localStorage.setItem("token", data.session.access_token);
+        }
+        window.location.href = '/'; 
+      }
     } catch (error: any) {
       console.error(error);
       setErrorMsg(error.message);

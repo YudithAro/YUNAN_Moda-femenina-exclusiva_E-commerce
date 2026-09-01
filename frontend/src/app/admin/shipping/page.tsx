@@ -25,7 +25,7 @@ export default function ShippingPage() {
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch("http://localhost:3000/orders");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/orders`);
       const data = await res.json();
       setOrders(data);
     } catch (error) {
@@ -41,7 +41,7 @@ export default function ShippingPage() {
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     try {
-      await fetch(`http://localhost:3000/orders/${id}/status`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/orders/${id}/status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

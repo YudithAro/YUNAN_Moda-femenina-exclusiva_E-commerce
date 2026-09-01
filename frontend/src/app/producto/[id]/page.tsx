@@ -25,7 +25,7 @@ export default function ProductDetailPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   useEffect(() => {
-    fetch(`http://localhost:3000/products/${params.id}`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/products/${params.id}`)
       .then(res => {
          if (!res.ok) throw new Error("Not found");
          return res.json();

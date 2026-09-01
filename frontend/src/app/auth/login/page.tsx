@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -28,23 +29,23 @@ export default function LoginPage() {
     setErrorMsg("");
     
     const formData = new FormData(e.currentTarget);
-    const email = formData.get("email");
-    const password = formData.get("password");
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
     try {
-      const res = await fetch("http://localhost:3000/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      if (!res.ok) {
-        throw new Error("Credenciales incorrectas");
+      if (error) {
+        throw error;
       }
 
-      const data = await res.json();
-      localStorage.setItem("token", data.access_token);
-      window.location.href = '/admin';
+      if (data?.session) {
+        localStorage.setItem("token", data.session.access_token);
+        window.location.href = '/admin';
+      }
     } catch (error: any) {
       console.error(error);
       setErrorMsg("Correo o contraseña incorrectos");

@@ -15,7 +15,7 @@ export default function NovedadesPage() {
 
   useEffect(() => {
     setMounted(true);
-    fetch("http://localhost:3000/products")
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/products`)
       .then((res) => res.json())
       .then((data) => {
         // Novedades will just show the latest 6 products (already sorted by createdAt DESC by backend)

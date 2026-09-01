@@ -54,7 +54,7 @@ export default function CouponsPage() {
 
   const fetchCoupons = async () => {
     try {
-      const res = await fetch("http://localhost:3000/coupons");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/coupons`);
       const data = await res.json();
       setCoupons(data);
     } catch (error) {
@@ -80,7 +80,7 @@ export default function CouponsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetch("http://localhost:3000/coupons", {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/coupons`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -102,7 +102,7 @@ export default function CouponsPage() {
 
   const toggleStatus = async (id: string, currentStatus: boolean) => {
     try {
-      await fetch(`http://localhost:3000/coupons/${id}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/coupons/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -118,7 +118,7 @@ export default function CouponsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("¿Seguro que quieres eliminar este cupón?")) return;
     try {
-      await fetch(`http://localhost:3000/coupons/${id}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/coupons/${id}`, {
         method: "DELETE",
       });
       fetchCoupons();

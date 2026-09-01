@@ -48,7 +48,7 @@ export default function SuppliersPage() {
 
   const fetchSuppliers = async () => {
     try {
-      const res = await fetch("http://localhost:3000/suppliers");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/suppliers`);
       const data = await res.json();
       setSuppliers(data);
     } catch (error) {
@@ -70,7 +70,7 @@ export default function SuppliersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetch("http://localhost:3000/suppliers", {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/suppliers`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -93,7 +93,7 @@ export default function SuppliersPage() {
 
   const toggleStatus = async (id: string, currentStatus: boolean) => {
     try {
-      await fetch(`http://localhost:3000/suppliers/${id}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/suppliers/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -109,7 +109,7 @@ export default function SuppliersPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("¿Seguro que quieres eliminar este proveedor?")) return;
     try {
-      await fetch(`http://localhost:3000/suppliers/${id}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/suppliers/${id}`, {
         method: "DELETE",
       });
       fetchSuppliers();

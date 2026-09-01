@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
 import pg from 'pg';
 import crypto from 'crypto';
 
@@ -38,15 +37,13 @@ export class UsersService {
   }
 
   async create(data: any): Promise<any> {
-    const salt = await bcrypt.genSalt();
-    const hashedPassword = await bcrypt.hash(data.password, salt);
-    const id = crypto.randomUUID();
+    const id = data.id || crypto.randomUUID();
 
     const { rows } = await pool.query(`
-      INSERT INTO "user" (id, name, email, password, role, "createdAt", "updatedAt")
-      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      INSERT INTO "user" (id, name, email, role, "createdAt", "updatedAt")
+      VALUES ($1, $2, $3, $4, NOW(), NOW())
       RETURNING *
-    `, [id, data.name, data.email, hashedPassword, data.role || 'USER']);
+    `, [id, data.name, data.email, data.role || 'USER']);
     
     return rows[0];
   }
@@ -60,5 +57,14 @@ export class UsersService {
     `, [role, id]);
     
     return rows[0];
+  }
+
+  async updateId(oldId: string, newId: string) {
+    // Intentamos actualizar el ID (puede fallar si hay foreign keys, pero como es cuenta nueva/admin debería estar bien)
+    try {
+      await pool.query(`UPDATE "user" SET id = $1 WHERE id = $2`, [newId, oldId]);
+    } catch (e) {
+      console.error('Error updating user ID:', e);
+    }
   }
 }

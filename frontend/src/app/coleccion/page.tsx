@@ -17,7 +17,7 @@ export default function ColeccionPage() {
 
   useEffect(() => {
     setMounted(true);
-    fetch("http://localhost:3000/products")
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/products`)
       .then((res) => res.json())
       .then((data) => {
         setProducts(Array.isArray(data) ? data : []);

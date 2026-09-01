@@ -1,33 +1,26 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service.js';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private usersService: UsersService,
-    private jwtService: JwtService,
-  ) {}
+  constructor(private usersService: UsersService) {}
 
-  async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.usersService.findByEmail(email);
-    if (user && await bcrypt.compare(pass, user.password)) {
-      const { password, ...result } = user;
-      return result;
+  async syncUser(data: { id: string, email: string, name: string }) {
+    // Verificamos si el usuario ya existe
+    let user = await this.usersService.findByEmail(data.email);
+    if (!user) {
+      // Si no existe, lo creamos con el id que nos manda Supabase
+      user = await this.usersService.create({
+        id: data.id,
+        email: data.email,
+        name: data.name || data.email.split('@')[0],
+        role: 'USER'
+      });
+    } else if (user.id !== data.id) {
+      // Si existe pero el ID es distinto (porque se migró a Supabase), actualizamos el ID local
+      await this.usersService.updateId(user.id, data.id);
+      user.id = data.id;
     }
-    return null;
-  }
-
-  async login(user: any) {
-    const payload = { email: user.email, sub: user.id, role: user.role };
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
-  }
-
-  async register(data: any) {
-    const user = await this.usersService.create(data);
-    return this.login(user);
+    return { success: true, user };
   }
 }

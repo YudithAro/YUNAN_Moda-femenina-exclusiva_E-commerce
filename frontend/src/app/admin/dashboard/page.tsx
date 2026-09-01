@@ -25,7 +25,7 @@ export default function DashboardStats() {
 
   const fetchMetrics = async () => {
     try {
-      const res = await fetch("http://localhost:3000/dashboard/metrics");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/dashboard/metrics`);
       const data = await res.json();
       setMetrics(data);
     } catch (error) {
@@ -37,7 +37,7 @@ export default function DashboardStats() {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch("http://localhost:3000/products");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/products`);
       const data = await res.json();
       setProducts(data);
     } catch (error) {
@@ -76,7 +76,7 @@ export default function DashboardStats() {
         ]
       };
 
-      await fetch("http://localhost:3000/orders/manual", {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/orders/manual`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)

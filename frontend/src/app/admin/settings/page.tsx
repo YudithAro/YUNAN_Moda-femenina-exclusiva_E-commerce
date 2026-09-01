@@ -37,7 +37,7 @@ export default function SettingsPage() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch("http://localhost:3000/users");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/users`);
       const data = await res.json();
       setUsers(data);
     } catch (error) {
@@ -53,7 +53,7 @@ export default function SettingsPage() {
 
   const handleRoleChange = async (id: string, newRole: string) => {
     try {
-      await fetch(`http://localhost:3000/users/${id}/role`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/users/${id}/role`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

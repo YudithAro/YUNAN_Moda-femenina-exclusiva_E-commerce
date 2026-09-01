@@ -53,7 +53,7 @@ export default function ProductsPage() {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch("http://localhost:3000/products");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/products`);
       const data = await res.json();
       setProducts(data);
     } catch (error) {
@@ -65,7 +65,7 @@ export default function ProductsPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch("http://localhost:3000/categories");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/categories`);
       const data = await res.json();
       setCategories(data);
     } catch (error) {
@@ -114,13 +114,13 @@ export default function ProductsPage() {
           const uploadData = new FormData();
           uploadData.append("image", file);
           
-          const uploadRes = await fetch("http://localhost:3000/products/upload", {
+          const uploadRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/products/upload`, {
             method: "POST",
             body: uploadData,
           });
           const uploadResult = await uploadRes.json();
           if (uploadResult.url) {
-            imageUrls.push(`http://localhost:3000${uploadResult.url}`);
+            imageUrls.push(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}${uploadResult.url}`);
           }
         }
       }
@@ -136,7 +136,7 @@ export default function ProductsPage() {
         if (imageUrls.length > 0) {
           payload.images = imageUrls;
         }
-        await fetch(`http://localhost:3000/products/${editingId}`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/products/${editingId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -145,7 +145,7 @@ export default function ProductsPage() {
         });
       } else {
         // 2. Create product
-        await fetch("http://localhost:3000/products", {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/products`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -176,7 +176,7 @@ export default function ProductsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("¿Seguro que quieres eliminar este producto?")) return;
     try {
-      const res = await fetch(`http://localhost:3000/products/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/products/${id}`, {
         method: "DELETE",
       });
       if (!res.ok) {

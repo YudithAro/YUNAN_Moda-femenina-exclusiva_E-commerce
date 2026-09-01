@@ -1,23 +1,16 @@
-import { Controller, Post, Body, UnauthorizedException, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('login')
+  @Post('sync-user')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() body: Record<string, any>) {
-    const user = await this.authService.validateUser(body.email, body.password);
-    if (!user) {
-      throw new UnauthorizedException('Credenciales inválidas');
+  async syncUser(@Body() body: { id: string, email: string, name: string }) {
+    if (!body.id || !body.email) {
+      throw new UnauthorizedException('Datos incompletos');
     }
-    return this.authService.login(user);
-  }
-
-  @Post('register')
-  async register(@Body() body: Record<string, any>) {
-    // Forzamos que el registro público siempre cree un usuario con rol 'USER', ignorando lo que venga del frontend.
-    return this.authService.register({ ...body, role: 'USER' });
+    return this.authService.syncUser(body);
   }
 }
