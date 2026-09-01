@@ -13,7 +13,7 @@ export default function NosotrosPage() {
   }, []);
 
   // Floating animation definition
-  const floatingAnimation = {
+  const floatingAnimation: any = {
     y: [0, -8, 0],
     transition: {
       duration: 4,

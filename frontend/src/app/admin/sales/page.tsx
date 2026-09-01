@@ -154,7 +154,9 @@ export default function SalesPage() {
                         {getStatusBadge(order.status)}
                         <Select
                           value={order.status}
-                          onValueChange={(val) => handleStatusChange(order.id, val)}
+                          onValueChange={(val) => {
+                            if (val) handleStatusChange(order.id, val);
+                          }}
                         >
                           <SelectTrigger className="h-7 w-[130px] text-xs">
                             <SelectValue placeholder="Cambiar estado" />

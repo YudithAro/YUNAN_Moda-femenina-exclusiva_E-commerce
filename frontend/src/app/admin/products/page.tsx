@@ -230,7 +230,7 @@ export default function ProductsPage() {
                 </div>
                 <div className="grid gap-2">
                   <label htmlFor="category" className="text-sm font-medium">Categoría</label>
-                  <Select value={formData.categoryId} onValueChange={(value) => setFormData(prev => ({ ...prev, categoryId: value }))}>
+                  <Select value={formData.categoryId} onValueChange={(value) => { if (value) setFormData(prev => ({ ...prev, categoryId: value }))}}>
                     <SelectTrigger className="bg-transparent text-white border-white/20">
                       <SelectValue placeholder="Seleccionar categoría" />
                     </SelectTrigger>

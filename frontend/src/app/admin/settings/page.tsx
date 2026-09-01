@@ -196,7 +196,9 @@ export default function SettingsPage() {
                         <TableCell className="text-right">
                           <Select
                             value={user.role}
-                            onValueChange={(val) => handleRoleChange(user.id, val)}
+                            onValueChange={(val) => {
+                              if (val) handleRoleChange(user.id, val);
+                            }}
                           >
                             <SelectTrigger className="h-8 w-[140px] text-xs ml-auto">
                               <SelectValue placeholder="Asignar Rol" />

@@ -159,7 +159,7 @@ export default function Home() {
               
               <div className="space-y-4">
                 <label className="text-[10px] font-sans font-bold text-[#cfa873] tracking-[0.3em] uppercase ml-2">Colección</label>
-                <Select value={category} onValueChange={setCategory}>
+                <Select value={category} onValueChange={(val) => { if (val) setCategory(val); }}>
                   <SelectTrigger className="bg-[#050103]/50 border-white/5 text-white rounded-2xl h-14 focus:ring-[#cfa873]/30 tracking-wide text-sm px-5">
                     <SelectValue placeholder="Todas las colecciones" />
                   </SelectTrigger>

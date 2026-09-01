@@ -170,7 +170,7 @@ export default function CouponsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <label className="text-sm font-medium">Tipo de Descuento</label>
-                    <Select value={formData.type} onValueChange={handleTypeChange}>
+                    <Select value={formData.type} onValueChange={(val) => { if (val) handleTypeChange(val); }}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecciona" />
                       </SelectTrigger>

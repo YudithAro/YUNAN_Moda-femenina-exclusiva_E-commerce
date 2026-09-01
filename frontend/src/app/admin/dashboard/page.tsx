@@ -136,7 +136,7 @@ export default function DashboardStats() {
                 </div>
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Producto Vendido</label>
-                  <Select value={formData.productId} onValueChange={(val) => setFormData(p => ({...p, productId: val}))}>
+                  <Select value={formData.productId} onValueChange={(val) => { if (val) setFormData(p => ({...p, productId: val}))}}>
                     <SelectTrigger className="bg-transparent text-white border-white/20">
                       <SelectValue placeholder="Seleccionar producto" />
                     </SelectTrigger>
