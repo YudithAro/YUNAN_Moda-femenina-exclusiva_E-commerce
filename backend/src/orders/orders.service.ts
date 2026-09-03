@@ -31,6 +31,27 @@ export class OrdersService {
     return rows;
   }
 
+  async findRecent(limit: number = 10) {
+    const { rows } = await pool.query(`
+      SELECT 
+        o.id, o.total, o.status, o."createdAt",
+        json_build_object('id', u.id, 'name', u.name, 'email', u.email) as user
+      FROM "order" o
+      LEFT JOIN "user" u ON o."userId" = u.id
+      ORDER BY o."createdAt" DESC
+      LIMIT $1
+    `, [limit]);
+    
+    for (const order of rows) {
+      const itemsRes = await pool.query(`
+        SELECT COUNT(*) as count FROM "orderItem" WHERE "orderId" = $1
+      `, [order.id]);
+      order.itemCount = parseInt(itemsRes.rows[0].count, 10);
+    }
+    
+    return rows;
+  }
+
   async findOne(id: string) {
     const { rows } = await pool.query(`
       SELECT 
