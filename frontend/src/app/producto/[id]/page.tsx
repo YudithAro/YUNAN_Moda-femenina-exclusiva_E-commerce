@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ShoppingBag, ArrowLeft, Star, Ruler, Truck, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { getImageUrl } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   useEffect(() => {
@@ -84,7 +86,7 @@ export default function ProductDetailPage() {
             className="w-full md:w-1/2 flex flex-col gap-4"
           >
             <div className="aspect-[3/4] relative rounded-[2rem] overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] group">
-              <img src={(product.images && product.images.length > 0) ? product.images[currentImageIndex] : "https://images.unsplash.com/photo-1550614000-4b95d466f397?auto=format&fit=crop&q=80&w=600"} alt={product.name} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+              <img src={getImageUrl((product.images && product.images.length > 0) ? product.images[currentImageIndex] : "https://images.unsplash.com/photo-1550614000-4b95d466f397?auto=format&fit=crop&q=80&w=600")} alt={product.name} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
               <div className="absolute inset-0 bg-gradient-to-t from-[#050103]/60 via-transparent to-transparent"></div>
             </div>
             
@@ -97,7 +99,7 @@ export default function ProductDetailPage() {
                     onClick={() => setCurrentImageIndex(idx)}
                     className={`relative w-20 h-24 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${currentImageIndex === idx ? 'border-[#cfa873] scale-105' : 'border-transparent opacity-50 hover:opacity-100'}`}
                   >
-                    <img src={img} alt={`${product.name} - view ${idx + 1}`} className="w-full h-full object-cover" />
+                    <img src={getImageUrl(img)} alt={`${product.name} - view ${idx + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
@@ -134,75 +136,100 @@ export default function ProductDetailPage() {
             </p>
 
             {/* Sizes */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-serif text-sm tracking-widest text-white/90 uppercase">Talla</h3>
-                <Dialog>
-                  <DialogTrigger render={<button className="text-pink-400 text-xs flex items-center hover:underline"><Ruler className="h-3 w-3 mr-1"/> Guía de tallas</button>} />
-                  <DialogContent className="sm:max-w-[500px] bg-[#0a0508] text-white border-[#cfa873]/30">
-                    <DialogHeader>
-                      <DialogTitle className="text-[#cfa873] font-serif text-2xl">Guía de Tallas</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                      <table className="w-full text-sm text-left">
-                        <thead className="text-xs text-pink-400 uppercase bg-pink-900/20 border-b border-pink-900/50">
-                          <tr>
-                            <th className="px-4 py-3">Talla</th>
-                            <th className="px-4 py-3">Busto (cm)</th>
-                            <th className="px-4 py-3">Cintura (cm)</th>
-                            <th className="px-4 py-3">Cadera (cm)</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/10">
-                          <tr className="hover:bg-white/5">
-                            <td className="px-4 py-3 font-bold text-[#cfa873]">S</td>
-                            <td className="px-4 py-3">86-90</td>
-                            <td className="px-4 py-3">66-70</td>
-                            <td className="px-4 py-3">90-94</td>
-                          </tr>
-                          <tr className="hover:bg-white/5">
-                            <td className="px-4 py-3 font-bold text-[#cfa873]">M</td>
-                            <td className="px-4 py-3">90-94</td>
-                            <td className="px-4 py-3">70-74</td>
-                            <td className="px-4 py-3">94-98</td>
-                          </tr>
-                          <tr className="hover:bg-white/5">
-                            <td className="px-4 py-3 font-bold text-[#cfa873]">L</td>
-                            <td className="px-4 py-3">94-100</td>
-                            <td className="px-4 py-3">74-80</td>
-                            <td className="px-4 py-3">98-104</td>
-                          </tr>
-                          <tr className="hover:bg-white/5">
-                            <td className="px-4 py-3 font-bold text-[#cfa873]">XL</td>
-                            <td className="px-4 py-3">100-106</td>
-                            <td className="px-4 py-3">80-86</td>
-                            <td className="px-4 py-3">104-110</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                      <p className="text-xs text-gray-400 mt-4 italic">
-                        * Estas medidas son aproximadas y pueden variar ligeramente dependiendo del diseño y la tela de la prenda.
-                      </p>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+            {product.sizes && product.sizes.length > 0 && (
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-serif text-sm tracking-widest text-white/90 uppercase">Talla</h3>
+                  <Dialog>
+                    <DialogTrigger render={<button className="text-pink-400 text-xs flex items-center hover:underline"><Ruler className="h-3 w-3 mr-1"/> Guía de tallas</button>} />
+                    <DialogContent className="sm:max-w-[500px] bg-[#0a0508] text-white border-[#cfa873]/30">
+                      <DialogHeader>
+                        <DialogTitle className="text-[#cfa873] font-serif text-2xl">Guía de Tallas</DialogTitle>
+                      </DialogHeader>
+                      <div className="py-4">
+                        <table className="w-full text-sm text-left">
+                          <thead className="text-xs text-pink-400 uppercase bg-pink-900/20 border-b border-pink-900/50">
+                            <tr>
+                              <th className="px-4 py-3">Talla</th>
+                              <th className="px-4 py-3">Busto (cm)</th>
+                              <th className="px-4 py-3">Cintura (cm)</th>
+                              <th className="px-4 py-3">Cadera (cm)</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-white/10">
+                            <tr className="hover:bg-white/5">
+                              <td className="px-4 py-3 font-bold text-[#cfa873]">S</td>
+                              <td className="px-4 py-3">86-90</td>
+                              <td className="px-4 py-3">66-70</td>
+                              <td className="px-4 py-3">90-94</td>
+                            </tr>
+                            <tr className="hover:bg-white/5">
+                              <td className="px-4 py-3 font-bold text-[#cfa873]">M</td>
+                              <td className="px-4 py-3">90-94</td>
+                              <td className="px-4 py-3">70-74</td>
+                              <td className="px-4 py-3">94-98</td>
+                            </tr>
+                            <tr className="hover:bg-white/5">
+                              <td className="px-4 py-3 font-bold text-[#cfa873]">L</td>
+                              <td className="px-4 py-3">94-100</td>
+                              <td className="px-4 py-3">74-80</td>
+                              <td className="px-4 py-3">98-104</td>
+                            </tr>
+                            <tr className="hover:bg-white/5">
+                              <td className="px-4 py-3 font-bold text-[#cfa873]">XL</td>
+                              <td className="px-4 py-3">100-106</td>
+                              <td className="px-4 py-3">80-86</td>
+                              <td className="px-4 py-3">104-110</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        <p className="text-xs text-gray-400 mt-4 italic">
+                          * Estas medidas son aproximadas y pueden variar ligeramente dependiendo del diseño y la tela de la prenda.
+                        </p>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                <div className="flex gap-3 flex-wrap">
+                  {product.sizes.map((size: string) => (
+                    <button 
+                      key={size}
+                      onClick={() => setSelectedSize(size)}
+                      className={`min-w-[3rem] h-12 px-3 rounded-full border flex items-center justify-center font-serif text-sm transition-all ${selectedSize === size ? 'border-[#cfa873] text-[#cfa873] bg-[#cfa873]/10' : 'border-white/20 text-gray-400 hover:border-white/50 hover:text-white'}`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="flex gap-3">
-                {['S', 'M', 'L', 'XL'].map((size) => (
-                  <button 
-                    key={size}
-                    onClick={() => setSelectedSize(size)}
-                    className={`w-12 h-12 rounded-full border flex items-center justify-center font-serif text-sm transition-all ${selectedSize === size ? 'border-[#cfa873] text-[#cfa873] bg-[#cfa873]/10' : 'border-white/20 text-gray-400 hover:border-white/50 hover:text-white'}`}
-                  >
-                    {size}
-                  </button>
-                ))}
+            )}
+
+            {/* Colors */}
+            {product.colors && product.colors.length > 0 && (
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-serif text-sm tracking-widest text-white/90 uppercase">Color</h3>
+                </div>
+                <div className="flex gap-3 flex-wrap">
+                  {product.colors.map((color: string) => (
+                    <button 
+                      key={color}
+                      onClick={() => setSelectedColor(color)}
+                      className={`px-4 h-10 rounded-full border flex items-center justify-center font-serif text-sm transition-all ${selectedColor === color ? 'border-[#cfa873] text-[#cfa873] bg-[#cfa873]/10' : 'border-white/20 text-gray-400 hover:border-white/50 hover:text-white'}`}
+                    >
+                      {color}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <Button 
               onClick={() => {
-                const message = encodeURIComponent(`Hola, estoy interesado en comprar el producto: ${product.name}`);
+                let text = `Hola, estoy interesada en la prenda ${product.name} (S/ ${Number(product.price).toFixed(2)})`;
+                if (selectedSize) text += `\nTalla seleccionada: ${selectedSize}`;
+                if (selectedColor) text += `\nColor seleccionado: ${selectedColor}`;
+                const message = encodeURIComponent(text);
                 window.open(`https://wa.me/51951162161?text=${message}`, '_blank');
               }}
               className="w-full gap-3 bg-green-600 hover:bg-green-700 text-white rounded-2xl py-8 text-sm font-bold tracking-widest uppercase shadow-[0_0_20px_rgba(22,163,74,0.3)] hover:shadow-[0_0_35px_rgba(22,163,74,0.6)] hover:scale-[1.02] transition-all border border-green-400/30 mb-4"

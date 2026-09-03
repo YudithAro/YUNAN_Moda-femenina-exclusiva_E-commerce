@@ -10,6 +10,11 @@ export class OrdersController {
     return this.ordersService.findAll();
   }
 
+  @Get('recent')
+  findRecent() {
+    return this.ordersService.findRecent();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.ordersService.findOne(id);

@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { getImageUrl } from "@/lib/utils";
 
 interface Product {
   id: string;
@@ -43,7 +44,9 @@ export default function ProductsPage() {
     description: "",
     price: "",
     stock: "",
-    categoryId: ""
+    categoryId: "",
+    sizes: "",
+    colors: ""
   });
   const [categories, setCategories] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -95,7 +98,9 @@ export default function ProductsPage() {
       description: product.description || "",
       price: String(product.price),
       stock: String(product.stock),
-      categoryId: product.categoryId || (product.category ? product.category.id : "")
+      categoryId: product.categoryId || (product.category ? product.category.id : ""),
+      sizes: product.sizes ? product.sizes.join(", ") : "",
+      colors: product.colors ? product.colors.join(", ") : ""
     });
     setEditingId(product.id);
     setImageFiles([]);
@@ -132,6 +137,8 @@ export default function ProductsPage() {
           price: parseFloat(formData.price),
           stock: parseInt(formData.stock, 10),
           categoryId: formData.categoryId || undefined,
+          sizes: formData.sizes.split(",").map(s => s.trim()).filter(Boolean),
+          colors: formData.colors.split(",").map(c => c.trim()).filter(Boolean),
         };
         if (imageUrls.length > 0) {
           payload.images = imageUrls;
@@ -156,6 +163,8 @@ export default function ProductsPage() {
             price: parseFloat(formData.price),
             stock: parseInt(formData.stock, 10),
             categoryId: formData.categoryId || undefined,
+            sizes: formData.sizes.split(",").map(s => s.trim()).filter(Boolean),
+            colors: formData.colors.split(",").map(c => c.trim()).filter(Boolean),
             images: imageUrls,
           }),
         });
@@ -164,7 +173,7 @@ export default function ProductsPage() {
       setIsUploading(false);
       setIsDialogOpen(false);
       setEditingId(null);
-      setFormData({ name: "", description: "", price: "", stock: "", categoryId: "" });
+      setFormData({ name: "", description: "", price: "", stock: "", categoryId: "", sizes: "", colors: "" });
       setImageFiles([]);
       fetchProducts();
     } catch (error) {
@@ -210,7 +219,7 @@ export default function ProductsPage() {
           setIsDialogOpen(open);
           if (!open) {
             setEditingId(null);
-            setFormData({ name: "", description: "", price: "", stock: "", categoryId: "" });
+            setFormData({ name: "", description: "", price: "", stock: "", categoryId: "", sizes: "", colors: "" });
           }
         }}>
           <DialogTrigger render={<Button className="gap-2 bg-pink-600 hover:bg-pink-700 text-white"><Plus className="h-4 w-4" /> Añadir Producto</Button>} />
@@ -249,6 +258,16 @@ export default function ProductsPage() {
                   <div className="grid gap-2">
                     <label htmlFor="stock" className="text-sm font-medium">Stock</label>
                     <Input id="stock" name="stock" type="number" value={formData.stock} onChange={handleInputChange} required />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <label htmlFor="sizes" className="text-sm font-medium">Tallas</label>
+                    <Input id="sizes" name="sizes" placeholder="Ej: S, M, L" value={formData.sizes} onChange={handleInputChange} />
+                  </div>
+                  <div className="grid gap-2">
+                    <label htmlFor="colors" className="text-sm font-medium">Colores</label>
+                    <Input id="colors" name="colors" placeholder="Ej: Rojo, Azul" value={formData.colors} onChange={handleInputChange} />
                   </div>
                 </div>
                 <div className="grid gap-2">
@@ -296,7 +315,7 @@ export default function ProductsPage() {
                     <TableCell className="font-medium flex items-center gap-3">
                       {product.images && product.images[0] ? (
                         <div className="h-10 w-10 rounded-md overflow-hidden bg-muted shrink-0 border">
-                          <img src={product.images[0]} alt={product.name} className="h-full w-full object-cover" />
+                          <img src={getImageUrl(product.images[0])} alt={product.name} className="h-full w-full object-cover" />
                         </div>
                       ) : (
                         <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center shrink-0 border">

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import pg from 'pg';
 import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
 
 import 'dotenv/config';
 const pool = new pg.Pool({
@@ -9,6 +10,37 @@ const pool = new pg.Pool({
 
 @Injectable()
 export class ProductsService {
+  private supabaseUrl = process.env.SUPABASE_URL;
+  private supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  private supabase = (this.supabaseUrl && this.supabaseKey) ? createClient(this.supabaseUrl, this.supabaseKey) : null;
+
+  async uploadImage(file: Express.Multer.File): Promise<string> {
+    if (!this.supabase) {
+      throw new Error('Las credenciales de Supabase (SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY) no están configuradas en el .env del backend.');
+    }
+    
+    const fileExt = file.originalname.split('.').pop();
+    const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${fileExt}`;
+
+    const { data, error } = await this.supabase.storage
+      .from('products')
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Error uploading to Supabase Storage:', error);
+      throw error;
+    }
+
+    const { data: publicUrlData } = this.supabase.storage
+      .from('products')
+      .getPublicUrl(fileName);
+
+    return publicUrlData.publicUrl;
+  }
+  
   async findAll() {
     const { rows } = await pool.query(`
       SELECT p.*, row_to_json(c) as category 
@@ -56,12 +88,14 @@ export class ProductsService {
     const slug = data.slug || (data.name ? data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : '');
     const id = crypto.randomUUID();
     const images = data.images || [];
+    const sizes = data.sizes || [];
+    const colors = data.colors || [];
     
     const { rows } = await pool.query(`
-      INSERT INTO "product" (id, name, slug, description, price, "categoryId", images, stock, "createdAt", "updatedAt")
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+      INSERT INTO "product" (id, name, slug, description, price, "categoryId", images, stock, sizes, colors, "createdAt", "updatedAt")
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
       RETURNING *
-    `, [id, data.name, slug, data.description || null, data.price, categoryId, images, data.stock || 0]);
+    `, [id, data.name, slug, data.description || null, data.price, categoryId, images, data.stock || 0, sizes, colors]);
     
     return rows[0];
   }
@@ -74,24 +108,23 @@ export class ProductsService {
           price = COALESCE($3, price),
           stock = COALESCE($4, stock),
           "categoryId" = COALESCE($5, "categoryId"),
+          sizes = COALESCE($6, sizes),
+          colors = COALESCE($7, colors),
           "updatedAt" = NOW()
     `;
     
-    const params: any[] = [data.name, data.description, data.price, data.stock, data.categoryId];
+    const params: any[] = [data.name, data.description, data.price, data.stock, data.categoryId, data.sizes, data.colors];
     
     if (data.images !== undefined) {
-      query += `, images = $6 WHERE id = $7 RETURNING *`;
-      params.push(JSON.stringify(data.images), id); // pg handles array of json or jsonb, stringifying helps if type is json
+      query += `, images = $8 WHERE id = $9 RETURNING *`;
+      params.push(JSON.stringify(data.images), id); 
     } else {
-      query += ` WHERE id = $6 RETURNING *`;
+      query += ` WHERE id = $8 RETURNING *`;
       params.push(id);
     }
     
-    // Convert array to postgres array format or json string if it's a jsonb column
-    // The create method uses $7 directly, which pg driver maps to JSON if the column is jsonb.
-    // Let's use the same behavior as create:
     if (data.images !== undefined) {
-      params[5] = data.images; // Use raw array for pg driver to serialize
+      params[7] = data.images; 
     }
     
     const { rows } = await pool.query(query, params);

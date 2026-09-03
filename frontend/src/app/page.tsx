@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
+import { getImageUrl } from "@/lib/utils";
 
 
 
@@ -233,7 +234,7 @@ export default function Home() {
                 </Button>
               </div>
             ) : filteredProducts.map((product, index) => {
-              const productImg = (product.images && product.images.length > 0) ? product.images[0] : (product.image || "https://images.unsplash.com/photo-1550614000-4b95d466f397?auto=format&fit=crop&q=80&w=600");
+              const productImg = getImageUrl((product.images && product.images.length > 0) ? product.images[0] : product.image);
               const productCategory = product.category?.name || product.category || "General";
               
               return (

@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param, Put, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { memoryStorage } from 'multer';
 import { extname } from 'path';
 import { ProductsService } from './products.service.js';
 
@@ -10,20 +10,19 @@ export class ProductsController {
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('image', {
-    storage: diskStorage({
-      destination: './uploads',
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
-      },
-    }),
+    storage: memoryStorage(),
   }))
-  uploadFile(@UploadedFile() file: Express.Multer.File) {
+  async uploadFile(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
       return { error: 'No file uploaded' };
     }
-    // Return the URL that the frontend will use to display the image
-    return { url: `/uploads/${file.filename}` };
+    try {
+      const publicUrl = await this.productsService.uploadImage(file);
+      return { url: publicUrl };
+    } catch (error) {
+      console.error('Error in uploadFile:', error);
+      return { error: 'Failed to upload file to storage' };
+    }
   }
 
   @Post()

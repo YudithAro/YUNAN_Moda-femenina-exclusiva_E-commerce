@@ -12,7 +12,7 @@ export default function AdminLayout({
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         window.location.href = "/auth/login";
         return;
@@ -27,7 +27,7 @@ export default function AdminLayout({
 
       setIsAuthorized(true);
     };
-    
+
     checkAuth();
   }, []);
 
