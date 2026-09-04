@@ -271,7 +271,7 @@ export default function ProductsPage() {
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <label htmlFor="image" className="text-sm font-medium">Imágenes del Producto</label>
+                  <label htmlFor="image" className="text-sm font-medium">Imágenes del Producto (Galería o Cámara)</label>
                   <Input id="image" type="file" accept="image/*" multiple onChange={handleFileChange} className="cursor-pointer" />
                 </div>
               </div>

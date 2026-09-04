@@ -169,7 +169,7 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8 font-sans">
       {/* Accesos Rápidos (Grid de Módulos Mejorado) */}
-      <div className="bg-card shadow-lg border border-border rounded-2xl p-6 mb-8 mt-2 hidden sm:block">
+      <div className="bg-card shadow-lg border border-border rounded-2xl p-4 sm:p-6 mb-8 mt-2">
         <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
           <LayoutDashboard className="h-4 w-4" /> Módulos de Administración
         </h3>
