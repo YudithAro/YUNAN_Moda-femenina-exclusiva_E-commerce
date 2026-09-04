@@ -125,7 +125,9 @@ export default function ProductsPage() {
           });
           const uploadResult = await uploadRes.json();
           if (uploadResult.url) {
-            imageUrls.push(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}${uploadResult.url}`);
+            // If the URL is already absolute (like Supabase), don't prepend the API URL
+            const isAbsolute = uploadResult.url.startsWith('http');
+            imageUrls.push(isAbsolute ? uploadResult.url : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}${uploadResult.url}`);
           }
         }
       }
