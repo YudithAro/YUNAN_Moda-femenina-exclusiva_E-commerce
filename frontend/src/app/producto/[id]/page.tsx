@@ -63,6 +63,7 @@ export default function ProductDetailPage() {
   }
 
   const categoryName = product.category?.name || product.category || "General";
+  const isBottom = categoryName.toLowerCase().includes('pantal') || categoryName.toLowerCase().includes('falda') || categoryName.toLowerCase().includes('short');
 
   return (
     <div className="min-h-screen bg-[#050103] text-white pt-24 pb-20 relative">
@@ -141,45 +142,45 @@ export default function ProductDetailPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-serif text-sm tracking-widest text-white/90 uppercase">Talla</h3>
                   <Dialog>
-                    <DialogTrigger render={<button className="text-pink-400 text-xs flex items-center hover:underline"><Ruler className="h-3 w-3 mr-1"/> Guía de tallas</button>} />
+                    <DialogTrigger render={<button className="text-[#cfa873] text-xs flex items-center hover:underline font-bold tracking-widest uppercase"><Ruler className="h-4 w-4 mr-1.5"/> Guía de tallas</button>} />
                     <DialogContent className="sm:max-w-[500px] bg-[#0a0508] text-white border-[#cfa873]/30">
                       <DialogHeader>
-                        <DialogTitle className="text-[#cfa873] font-serif text-2xl">Guía de Tallas</DialogTitle>
+                        <DialogTitle className="text-[#cfa873] font-serif text-2xl">Guía de Tallas - {categoryName}</DialogTitle>
                       </DialogHeader>
                       <div className="py-4">
                         <table className="w-full text-sm text-left">
-                          <thead className="text-xs text-pink-400 uppercase bg-pink-900/20 border-b border-pink-900/50">
+                          <thead className="text-xs text-[#cfa873] uppercase bg-[#cfa873]/10 border-b border-[#cfa873]/30">
                             <tr>
                               <th className="px-4 py-3">Talla</th>
-                              <th className="px-4 py-3">Busto (cm)</th>
+                              {!isBottom && <th className="px-4 py-3">Busto (cm)</th>}
                               <th className="px-4 py-3">Cintura (cm)</th>
                               <th className="px-4 py-3">Cadera (cm)</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-white/10">
                             <tr className="hover:bg-white/5">
-                              <td className="px-4 py-3 font-bold text-[#cfa873]">S</td>
-                              <td className="px-4 py-3">86-90</td>
-                              <td className="px-4 py-3">66-70</td>
-                              <td className="px-4 py-3">90-94</td>
+                              <td className="px-4 py-4 font-bold text-[#cfa873]">S</td>
+                              {!isBottom && <td className="px-4 py-4">86-90</td>}
+                              <td className="px-4 py-4">66-70</td>
+                              <td className="px-4 py-4">90-94</td>
                             </tr>
                             <tr className="hover:bg-white/5">
-                              <td className="px-4 py-3 font-bold text-[#cfa873]">M</td>
-                              <td className="px-4 py-3">90-94</td>
-                              <td className="px-4 py-3">70-74</td>
-                              <td className="px-4 py-3">94-98</td>
+                              <td className="px-4 py-4 font-bold text-[#cfa873]">M</td>
+                              {!isBottom && <td className="px-4 py-4">90-94</td>}
+                              <td className="px-4 py-4">70-74</td>
+                              <td className="px-4 py-4">94-98</td>
                             </tr>
                             <tr className="hover:bg-white/5">
-                              <td className="px-4 py-3 font-bold text-[#cfa873]">L</td>
-                              <td className="px-4 py-3">94-100</td>
-                              <td className="px-4 py-3">74-80</td>
-                              <td className="px-4 py-3">98-104</td>
+                              <td className="px-4 py-4 font-bold text-[#cfa873]">L</td>
+                              {!isBottom && <td className="px-4 py-4">94-100</td>}
+                              <td className="px-4 py-4">74-80</td>
+                              <td className="px-4 py-4">98-104</td>
                             </tr>
                             <tr className="hover:bg-white/5">
-                              <td className="px-4 py-3 font-bold text-[#cfa873]">XL</td>
-                              <td className="px-4 py-3">100-106</td>
-                              <td className="px-4 py-3">80-86</td>
-                              <td className="px-4 py-3">104-110</td>
+                              <td className="px-4 py-4 font-bold text-[#cfa873]">XL</td>
+                              {!isBottom && <td className="px-4 py-4">100-106</td>}
+                              <td className="px-4 py-4">80-86</td>
+                              <td className="px-4 py-4">104-110</td>
                             </tr>
                           </tbody>
                         </table>
@@ -195,7 +196,7 @@ export default function ProductDetailPage() {
                     <button 
                       key={size}
                       onClick={() => setSelectedSize(size)}
-                      className={`min-w-[3rem] h-12 px-3 rounded-full border flex items-center justify-center font-serif text-sm transition-all ${selectedSize === size ? 'border-[#cfa873] text-[#cfa873] bg-[#cfa873]/10' : 'border-white/20 text-gray-400 hover:border-white/50 hover:text-white'}`}
+                      className={`min-w-[3.5rem] h-12 px-4 rounded-xl border-2 flex items-center justify-center font-bold text-base transition-all ${selectedSize === size ? 'border-[#cfa873] text-[#030001] bg-[#cfa873] shadow-[0_0_15px_rgba(207,168,115,0.4)]' : 'border-white/20 text-white bg-white/5 hover:border-white/50 hover:bg-white/10'}`}
                     >
                       {size}
                     </button>
@@ -215,7 +216,7 @@ export default function ProductDetailPage() {
                     <button 
                       key={color}
                       onClick={() => setSelectedColor(color)}
-                      className={`px-4 h-10 rounded-full border flex items-center justify-center font-serif text-sm transition-all ${selectedColor === color ? 'border-[#cfa873] text-[#cfa873] bg-[#cfa873]/10' : 'border-white/20 text-gray-400 hover:border-white/50 hover:text-white'}`}
+                      className={`px-5 h-12 rounded-xl border-2 flex items-center justify-center font-bold text-base transition-all ${selectedColor === color ? 'border-[#cfa873] text-[#030001] bg-[#cfa873] shadow-[0_0_15px_rgba(207,168,115,0.4)]' : 'border-white/20 text-white bg-white/5 hover:border-white/50 hover:bg-white/10'}`}
                     >
                       {color}
                     </button>
