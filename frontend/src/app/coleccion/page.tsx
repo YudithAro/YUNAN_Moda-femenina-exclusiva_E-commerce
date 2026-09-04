@@ -122,9 +122,14 @@ export default function ColeccionPage() {
 
                       <div className="absolute top-6 right-6">
                         {Number(product.stock) > 0 ? (
-                          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)] animate-pulse" title="Disponible"></div>
+                          <div className="bg-[#030001]/40 backdrop-blur-md border border-white/20 text-white text-[9px] font-bold tracking-[0.2em] uppercase px-3 py-1.5 rounded-full shadow-2xl flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            En Stock
+                          </div>
                         ) : (
-                          <div className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]" title="Agotado"></div>
+                          <div className="bg-[#030001]/40 backdrop-blur-md border border-red-500/30 text-red-400 text-[9px] font-bold tracking-[0.2em] uppercase px-3 py-1.5 rounded-full shadow-2xl">
+                            Agotado
+                          </div>
                         )}
                       </div>
                     </div>
