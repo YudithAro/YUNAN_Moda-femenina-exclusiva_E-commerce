@@ -63,7 +63,9 @@ export default function ProductDetailPage() {
   }
 
   const categoryName = product.category?.name || product.category || "General";
-  const isBottom = categoryName.toLowerCase().includes('pantal') || categoryName.toLowerCase().includes('falda') || categoryName.toLowerCase().includes('short');
+  const cat = categoryName.toLowerCase();
+  const isBottom = cat.includes('pantal') || cat.includes('falda') || cat.includes('short');
+  const isTop = cat.includes('top') || cat.includes('polo') || cat.includes('blusa') || cat.includes('casaca') || cat.includes('abrigo') || cat.includes('chompa');
 
   return (
     <div className="min-h-screen bg-[#050103] text-white pt-24 pb-20 relative">
@@ -154,7 +156,7 @@ export default function ProductDetailPage() {
                               <th className="px-4 py-3">Talla</th>
                               {!isBottom && <th className="px-4 py-3">Busto (cm)</th>}
                               <th className="px-4 py-3">Cintura (cm)</th>
-                              <th className="px-4 py-3">Cadera (cm)</th>
+                              {!isTop && <th className="px-4 py-3">Cadera (cm)</th>}
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-white/10">
@@ -162,25 +164,25 @@ export default function ProductDetailPage() {
                               <td className="px-4 py-4 font-bold text-[#cfa873]">S</td>
                               {!isBottom && <td className="px-4 py-4">86-90</td>}
                               <td className="px-4 py-4">66-70</td>
-                              <td className="px-4 py-4">90-94</td>
+                              {!isTop && <td className="px-4 py-4">90-94</td>}
                             </tr>
                             <tr className="hover:bg-white/5">
                               <td className="px-4 py-4 font-bold text-[#cfa873]">M</td>
                               {!isBottom && <td className="px-4 py-4">90-94</td>}
                               <td className="px-4 py-4">70-74</td>
-                              <td className="px-4 py-4">94-98</td>
+                              {!isTop && <td className="px-4 py-4">94-98</td>}
                             </tr>
                             <tr className="hover:bg-white/5">
                               <td className="px-4 py-4 font-bold text-[#cfa873]">L</td>
                               {!isBottom && <td className="px-4 py-4">94-100</td>}
                               <td className="px-4 py-4">74-80</td>
-                              <td className="px-4 py-4">98-104</td>
+                              {!isTop && <td className="px-4 py-4">98-104</td>}
                             </tr>
                             <tr className="hover:bg-white/5">
                               <td className="px-4 py-4 font-bold text-[#cfa873]">XL</td>
                               {!isBottom && <td className="px-4 py-4">100-106</td>}
                               <td className="px-4 py-4">80-86</td>
-                              <td className="px-4 py-4">104-110</td>
+                              {!isTop && <td className="px-4 py-4">104-110</td>}
                             </tr>
                           </tbody>
                         </table>
