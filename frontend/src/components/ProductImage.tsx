@@ -17,6 +17,12 @@ function canOptimize(source: string) {
   } catch { return false; }
 }
 
+// This catalog image was uploaded as a phone screenshot. Frame the actual
+// photograph; only this exact file needs the adjustment.
+export function isPhoneScreenshot(src?: string) {
+  return src === "https://mmvgezwaijypyshwjjeo.supabase.co/storage/v1/object/public/products/1788484782572-160478898.jpg";
+}
+
 export function ProductImage({ src, alt, sizes, preload = false, fit = "contain", className = "" }: {
   src?: string; alt: string; sizes: string; preload?: boolean;
   fit?: "contain" | "cover"; className?: string;
@@ -28,8 +34,10 @@ export function ProductImage({ src, alt, sizes, preload = false, fit = "contain"
       {src ? "Imagen no disponible" : "Fotografía próximamente"}
     </div>
   );
+  const screenshot = isPhoneScreenshot(src);
   return <Image src={source} alt={alt} fill sizes={sizes} preload={preload}
     unoptimized={!canOptimize(source)}
-    className={`${fit === "contain" ? "object-contain" : "object-cover"} ${className}`}
+    className={`${fit === "contain" && !screenshot ? "object-contain" : "object-cover"} ${className}`}
+    style={screenshot ? { objectPosition: "center 68%" } : undefined}
     onError={() => setFailedSource(source)} />;
 }

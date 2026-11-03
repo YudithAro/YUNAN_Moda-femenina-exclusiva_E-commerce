@@ -88,8 +88,8 @@ function ProductDetail({ id }: { id: string }) {
     <StoreBackdrop />
     <div className="relative z-10 mx-auto max-w-7xl">
       <Link href="/coleccion" className="mb-5 inline-flex min-h-11 items-center gap-2 text-sm text-zinc-300 hover:text-white"><ArrowLeft size={16} />Volver a la colección</Link>
-      <div className="grid items-start gap-8 md:grid-cols-2 lg:gap-16">
-        <div className="min-w-0 md:sticky md:top-28"><ProductGallery images={images} name={product.name} /></div>
+      <div className="grid items-start gap-8 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
+        <div className="mx-auto w-full min-w-0 max-w-[510px] md:sticky md:top-28"><ProductGallery images={images} name={product.name} /></div>
         <div className="min-w-0 py-1">
           <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
             <span className="text-zinc-400">{categoryName(product)}</span><span aria-hidden="true" className="h-1 w-1 rounded-full bg-zinc-600" />

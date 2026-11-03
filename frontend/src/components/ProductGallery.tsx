@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Expand, ZoomIn, ZoomOut } from "lucide-react";
-import { ProductImage } from "@/components/ProductImage";
+import { isPhoneScreenshot, ProductImage } from "@/components/ProductImage";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export function ProductGallery({ images, name }: { images: string[]; name: string }) {
@@ -17,7 +17,7 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
   return <div className="min-w-0">
     <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-[#ede9e3]">
       <button type="button" disabled={!images.length} aria-label={`Ampliar fotografía de ${name}`} onClick={() => { setZoomed(false); setExpanded(true); }} className="absolute inset-0 h-full w-full focus-visible:outline-4 focus-visible:outline-inset focus-visible:outline-[#cfac78]">
-        <ProductImage src={images[index]} alt={`${name}, fotografía ${index + 1}`} sizes="(max-width: 767px) 100vw, 50vw" preload className="p-2" />
+        <ProductImage src={images[index]} alt={`${name}, fotografía ${index + 1}`} sizes="(max-width: 767px) 100vw, 510px" preload fit="cover" />
         {images.length > 0 && <span className="absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-2 text-xs font-medium text-stone-800"><Expand size={15} /> Ampliar</span>}
       </button>
       {images.length > 1 && <div className="pointer-events-none absolute inset-x-3 top-1/2 flex -translate-y-1/2 justify-between"><span className="pointer-events-auto">{navigation(-1)}</span><span className="pointer-events-auto">{navigation(1)}</span></div>}
@@ -25,7 +25,7 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
     {images.length > 1 && <div aria-label="Fotografías de la prenda" className="mt-3 flex gap-3 overflow-x-auto py-1">
       {images.map((image, position) => <button key={image + position} type="button" aria-label={`Ver fotografía ${position + 1} de ${name}`} aria-pressed={index === position} onClick={() => setIndex(position)}
         className={`relative h-24 w-20 shrink-0 overflow-hidden rounded-xl bg-[#ede9e3] outline-offset-2 ${index === position ? "ring-2 ring-[#cfac78]" : "opacity-65 hover:opacity-100"}`}>
-        <ProductImage src={image} alt="" sizes="80px" className="p-1" />
+        <ProductImage src={image} alt="" sizes="80px" fit="cover" />
       </button>)}
     </div>}
     <p className="mt-3 text-center text-xs text-zinc-400">{images.length > 0 ? `Fotografía ${index + 1} de ${images.length}. Toca la imagen para verla de cerca.` : "Nuestro equipo puede ayudarte con más información."}</p>
@@ -36,8 +36,10 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
           if (event.key === "ArrowLeft") { event.preventDefault(); next(-1); }
           if (event.key === "ArrowRight") { event.preventDefault(); next(1); }
         }} tabIndex={0} aria-label="Vista ampliada de la prenda">
-          <div className={`relative ${zoomed ? "h-[130dvh] w-[200%]" : "h-full w-full"}`}>
-            <ProductImage src={images[index]} alt={`${name}, fotografía ampliada ${index + 1}`} sizes={zoomed ? "150vw" : "(max-width: 767px) 100vw, 960px"} className="p-2" />
+          <div className={`relative flex items-center justify-center ${zoomed ? "h-[130dvh] w-[200%]" : "h-full w-full"}`}>
+            <div className={isPhoneScreenshot(images[index]) ? `relative aspect-[3/4] w-full ${zoomed ? "max-w-[97.5dvh]" : "max-w-[48.75dvh]"}` : "relative h-full w-full"}>
+              <ProductImage src={images[index]} alt={`${name}, fotografía ampliada ${index + 1}`} sizes={zoomed ? "150vw" : "(max-width: 767px) 100vw, 960px"} />
+            </div>
           </div>
         </div>
         <div className="flex items-center justify-between gap-3">
