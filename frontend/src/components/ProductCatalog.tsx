@@ -73,8 +73,8 @@ export function ProductCatalog({ mode = "collection" }: { mode?: "home" | "colle
     <StoreBackdrop />
     <header className={`relative z-10 border-b border-white/5 px-4 ${mode === "home" ? "py-12 md:py-16" : "py-9 md:py-11"}`}>
       {mode === "home" ? <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
-        <Image src="/logo-yunan2.png" alt="Logo de YUNAN" width={160} height={160} preload
-          className="h-28 w-28 rounded-full border border-[#cfa873]/25 object-cover shadow-[0_0_50px_rgba(207,168,115,0.18)] sm:h-36 sm:w-36" />
+        <Image src="/logo-yunan2.png" alt="Logo de YUNAN" width={256} height={256} preload
+          className="h-40 w-40 rounded-full border border-[#cfa873]/25 object-cover shadow-[0_0_50px_rgba(207,168,115,0.18)] sm:h-48 sm:w-48 lg:h-56 lg:w-56" />
         <p className="mt-6 text-xs font-semibold uppercase tracking-[0.25em] text-[#cfa873]">Exclusividad &amp; elegancia</p>
         <h1 className="mt-4 font-serif text-4xl leading-tight sm:text-5xl md:text-7xl">
           <span className="block font-light text-white">COLECCIÓN</span>
