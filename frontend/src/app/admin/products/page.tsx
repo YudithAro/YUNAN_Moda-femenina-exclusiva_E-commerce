@@ -1,4 +1,6 @@
 "use client";
+import { confirmAction } from "@/lib/confirm-action";
+import { useAdminRefresh } from "@/lib/use-admin-refresh";
 import { apiFetch, getErrorMessage } from "@/lib/api";
 
 import { useEffect, useState } from "react";
@@ -61,7 +63,7 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [categoryError, setCategoryError] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -89,9 +91,22 @@ export default function ProductsPage() {
     }
   };
 
+  useAdminRefresh(fetchProducts);
+
   useEffect(() => {
     void Promise.resolve().then(fetchProducts);
     void Promise.resolve().then(fetchCategories);
+  }, []);
+
+  useEffect(() => {
+    const openNew = () => {
+      setEditingId(null);
+      setFormData({ name: "", description: "", price: "", stock: "", categoryId: "", sizes: "", colors: "" });
+      setVariants([]); setImageFiles([]); setError(""); setCategoryError(""); setIsDialogOpen(true);
+    };
+    window.addEventListener("yunan:new-product", openNew);
+    if (window.location.hash === "#nuevo") void Promise.resolve().then(openNew);
+    return () => window.removeEventListener("yunan:new-product", openNew);
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,7 +142,11 @@ export default function ProductsPage() {
     if (isUploading) return;
     setError("");
     try {
-      if (!formData.categoryId) throw new Error("Selecciona una categoría.");
+      if (!formData.categoryId) {
+        setCategoryError("Selecciona una categoría para esta prenda.");
+        document.getElementById("category")?.focus();
+        return;
+      }
       if (variants.some(variant => (!variant.size?.trim() && !variant.color?.trim()) || !Number.isSafeInteger(Number(variant.stock)) || Number(variant.stock) < 0)) throw new Error("Cada combinación necesita una talla o color y stock entero desde cero.");
       const combinations = variants.map(variant => `${variant.size?.trim().toLowerCase() || ""}|${variant.color?.trim().toLowerCase() || ""}`);
       if (new Set(combinations).size !== combinations.length) throw new Error("Hay combinaciones de talla y color repetidas.");
@@ -152,8 +171,8 @@ export default function ProductsPage() {
         ...((imageUrls.length || !editingId) ? { images: imageUrls } : {}),
       };
       await apiFetch(editingId ? `/products/${editingId}` : "/products", { method: editingId ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      setSuccess(editingId ? "Producto actualizado." : "Producto creado.");
       setIsDialogOpen(false);
+      if (window.location.hash === "#nuevo") window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
       setEditingId(null);
       setFormData({ name: "", description: "", price: "", stock: "", categoryId: "", sizes: "", colors: "" });
       setVariants([]);
@@ -164,7 +183,7 @@ export default function ProductsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Seguro que quieres eliminar este producto?")) return;
+    if (!await confirmAction({ title: "Eliminar producto", description: "Esta acción quitará el registro. Si está asociado a ventas u otros datos, el sistema conservará su historial e impedirá eliminarlo." })) return;
     try {
       const res = await apiFetch(`/products/${id}`, {
         method: "DELETE",
@@ -175,15 +194,14 @@ export default function ProductsPage() {
       fetchProducts();
     } catch (error) {
       console.error("Error deleting product:", error);
-      alert("No se pudo eliminar el producto. Verifica que el servidor esté activo o que no tenga restricciones.");
+      setError(getErrorMessage(error));
     }
   };
 
   return (
     <div className="space-y-8">
-      {success && <p role="status" className="text-emerald-600 dark:text-emerald-300">{success}</p>}
       {error && !isDialogOpen && <p role="alert" className="text-red-600 dark:text-red-300">{error}</p>}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6 sm:items-center">
         <div className="flex items-center gap-4">
           <Link href="/admin">
             <Button variant="outline" size="icon" className="h-10 w-10 rounded-full">
@@ -201,13 +219,15 @@ export default function ProductsPage() {
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           if (isUploading) return;
           setIsDialogOpen(open);
-          if (open && !editingId) { setVariants([]); setImageFiles([]); setError(""); setSuccess(""); }
+          if (open && !editingId) { setVariants([]); setImageFiles([]); setError(""); }
           if (!open) {
+            setCategoryError("");
+            if (window.location.hash === "#nuevo") window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
             setEditingId(null);
             setFormData({ name: "", description: "", price: "", stock: "", categoryId: "", sizes: "", colors: "" });
           }
         }}>
-          <DialogTrigger render={<Button className="gap-2 bg-pink-600 hover:bg-pink-700 text-white"><Plus className="h-4 w-4" /> Añadir Producto</Button>} />
+          <DialogTrigger render={<Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"><Plus className="h-4 w-4" /> Añadir Producto</Button>} />
           <DialogContent className="sm:max-w-[620px] max-h-[90dvh] overflow-y-auto">
             <form onSubmit={handleSubmit}>
               <DialogHeader>
@@ -217,7 +237,7 @@ export default function ProductsPage() {
                 {error && <p role="alert" className="rounded-lg bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-300">{error}</p>}
                 <div className="grid gap-2">
                   <label htmlFor="name" className="text-sm font-medium">Nombre</label>
-                  <Input id="name" name="name" value={formData.name} onChange={handleInputChange} required />
+                  <Input id="name" name="name" maxLength={200} value={formData.name} onChange={handleInputChange} required />
                 </div>
                 <div className="grid gap-2">
                   <label htmlFor="description" className="text-sm font-medium">Descripción</label>
@@ -225,16 +245,17 @@ export default function ProductsPage() {
                 </div>
                 <div className="grid gap-2">
                   <label htmlFor="category" className="text-sm font-medium">Categoría</label>
-                  <Select items={categories.map(category => ({ value: category.id, label: category.name }))} value={formData.categoryId} onValueChange={(value) => { if (value) setFormData(prev => ({ ...prev, categoryId: value }))}}>
-                    <SelectTrigger id="category" className="bg-background text-foreground border-input">
+                  <Select items={categories.map(category => ({ value: category.id, label: category.name }))} value={formData.categoryId} onValueChange={(value) => { if (value) { setFormData(prev => ({ ...prev, categoryId: value })); setCategoryError(""); } }}>
+                    <SelectTrigger id="category" aria-invalid={!!categoryError} aria-describedby={categoryError ? "category-error" : undefined} className="min-h-11 bg-background text-foreground border-input">
                       <SelectValue placeholder="Seleccionar categoría" />
                     </SelectTrigger>
                     <SelectContent className="bg-[#0a0508] border-white/10 text-white">
                       {categories.map(cat => (
-                        <SelectItem key={cat.id} value={cat.id} className="hover:bg-pink-900/30">{cat.name}</SelectItem>
+                        <SelectItem key={cat.id} value={cat.id} className="hover:bg-white/10">{cat.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {categoryError && <p id="category-error" role="alert" className="text-xs leading-5 text-rose-300">{categoryError}</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
@@ -259,7 +280,7 @@ export default function ProductsPage() {
                 <fieldset className="space-y-3 rounded-xl border p-3">
                   <legend className="px-1 text-sm font-medium">Inventario por talla y color</legend>
                   <p className="text-xs text-muted-foreground">Registra las unidades reales de cada combinación. El stock total será la suma de estas filas. Para cambiar una talla o color ya guardados, agota esa fila y añade una nueva.</p>
-                  {variants.map((variant, index) => <div key={variant.id || `new-${index}`} className="grid grid-cols-[1fr_1fr_80px_auto] items-end gap-2">
+                  {variants.map((variant, index) => <div key={variant.id || `new-${index}`} className="grid grid-cols-2 items-end gap-2 rounded-lg border border-white/10 p-3 sm:grid-cols-[1fr_1fr_80px_auto]">
                     <label className="grid gap-1 text-xs">Talla<Input readOnly={!!variant.id} aria-label={`Talla de combinación ${index + 1}`} value={variant.size || ""} maxLength={50} onChange={event => setVariants(rows => rows.map((row, i) => i === index ? { ...row, size: event.target.value } : row))} /></label>
                     <label className="grid gap-1 text-xs">Color<Input readOnly={!!variant.id} aria-label={`Color de combinación ${index + 1}`} value={variant.color || ""} maxLength={50} onChange={event => setVariants(rows => rows.map((row, i) => i === index ? { ...row, color: event.target.value } : row))} /></label>
                     <label className="grid gap-1 text-xs">Unidades<Input aria-label={`Stock de combinación ${index + 1}`} type="number" required min="0" step="1" value={variant.stock} onChange={event => setVariants(rows => rows.map((row, i) => i === index ? { ...row, stock: Number(event.target.value) } : row))} /></label>
@@ -268,13 +289,14 @@ export default function ProductsPage() {
                   <Button type="button" variant="outline" onClick={() => setVariants(rows => [...rows, { size: "", color: "", stock: 0 }])}>Añadir combinación</Button>
                 </fieldset>
                 <div className="grid gap-2">
-                  <label htmlFor="image" className="text-sm font-medium">Imágenes del Producto (Galería o Cámara)</label>
-                  <Input id="image" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleFileChange} className="cursor-pointer" />
+                  <label htmlFor="image" className="text-sm font-medium">Fotografías de la prenda</label>
+                  <Input id="image" aria-describedby="image-hint" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleFileChange} className="cursor-pointer" />
+                  <p id="image-hint" className="text-xs leading-6 text-muted-foreground">Usa fotos verticales (3:4), fondo uniforme e iluminación similar. Incluye una vista completa y otra de detalle. JPG, PNG o WebP de hasta 5 MB cada una.{editingId ? " Si eliges fotos nuevas, reemplazarán la galería actual." : ""}</p>
                 </div>
               </div>
               <DialogFooter>
                 <DialogClose render={<Button type="button" variant="outline">Cancelar</Button>} />
-                <Button type="submit" disabled={isUploading} className="bg-pink-600 hover:bg-pink-700 text-white">
+                <Button type="submit" disabled={isUploading} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                   {isUploading ? "Guardando..." : "Guardar Producto"}
                 </Button>
               </DialogFooter>
@@ -326,10 +348,10 @@ export default function ProductsPage() {
                     <TableCell className="text-right">{product.stock}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleEdit(product)}>
+                        <Button aria-label={`Editar ${product.name}`} variant="ghost" size="icon" className="h-11 w-11 text-zinc-300 hover:bg-white/10" onClick={() => handleEdit(product)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(product.id)}>
+                        <Button aria-label={`Eliminar ${product.name}`} variant="ghost" size="icon" className="h-11 w-11 text-rose-300 hover:bg-rose-400/10" onClick={() => handleDelete(product.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>

@@ -17,6 +17,20 @@ function reportError(error: Error) {
   }
 }
 
+function mutationMessage(path: string, method: string): string | undefined {
+  const resource = path.replace(/^\//, '').split('/')[0];
+  const names: Record<string, { name: string; saved: string; deleted: string }> = {
+    products: { name: 'Producto', saved: 'guardado', deleted: 'eliminado' },
+    categories: { name: 'Categoría', saved: 'guardada', deleted: 'eliminada' },
+    coupons: { name: 'Cupón', saved: 'guardado', deleted: 'eliminado' },
+    suppliers: { name: 'Proveedor', saved: 'guardado', deleted: 'eliminado' },
+  };
+  if (path.includes('/upload')) return undefined;
+  if (resource === 'orders') return path.endsWith('/manual') ? 'Venta registrada. El inventario está actualizado.' : 'Estado del pedido actualizado.';
+  if (!names[resource]) return undefined;
+  return `${names[resource].name} ${method === 'DELETE' ? names[resource].deleted : names[resource].saved} correctamente.`;
+}
+
 /** Requests to the Render API always use the current Supabase session. */
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
   try {
@@ -40,6 +54,9 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
         : typeof detail === "string" ? detail : "No se pudo completar la operación.";
       throw new ApiError(message, response.status);
     }
+    const method = (init.method || 'GET').toUpperCase();
+    const message = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) ? mutationMessage(path, method) : undefined;
+    if (message && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('yunan:success', { detail: message }));
     return response;
   } catch (error) {
     const failure = error instanceof ApiError ? error : new ApiError("No se pudo conectar con la tienda. Revisa tu conexión e inténtalo de nuevo.", 0);

@@ -1,4 +1,5 @@
 "use client";
+import { useAdminRefresh } from "@/lib/use-admin-refresh";
 import { apiFetch, getErrorMessage } from "@/lib/api";
 
 import { useEffect, useState } from "react";
@@ -66,6 +67,8 @@ export default function SalesPage() {
     }
   };
 
+  useAdminRefresh(fetchOrders);
+
   useEffect(() => { void Promise.resolve().then(fetchOrders); }, []);
 
   const handleStatusChange = async (id: string, newStatus: string) => {
@@ -117,7 +120,7 @@ export default function SalesPage() {
           </div>}
         </DialogContent>
       </Dialog>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6 sm:items-center">
         <div className="flex items-center gap-4">
           <Link href="/admin">
             <Button variant="outline" size="icon" className="h-10 w-10 rounded-full">

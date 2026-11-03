@@ -1,5 +1,7 @@
 "use client";
-import { apiFetch } from "@/lib/api";
+import { confirmAction } from "@/lib/confirm-action";
+import { useAdminRefresh } from "@/lib/use-admin-refresh";
+import { apiFetch, getErrorMessage } from "@/lib/api";
 
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -42,6 +44,8 @@ export default function CategoriesPage() {
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const fetchCategories = async () => {
     try {
@@ -55,6 +59,8 @@ export default function CategoriesPage() {
     }
   };
 
+  useAdminRefresh(fetchCategories);
+
   useEffect(() => { void Promise.resolve().then(fetchCategories); }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,9 +72,10 @@ export default function CategoriesPage() {
     e.preventDefault();
     if (isSaving) return;
     setIsSaving(true);
+    setFormError("");
     try {
-      await apiFetch(`/categories`, {
-        method: "POST",
+      await apiFetch(editingId ? `/categories/${editingId}` : "/categories", {
+        method: editingId ? "PUT" : "POST",
         headers: {
           "Content-Type": "application/json",
         },
@@ -78,15 +85,17 @@ export default function CategoriesPage() {
         }),
       });
       setIsDialogOpen(false);
+      setEditingId(null);
       setFormData({ name: "", description: "" });
       fetchCategories();
     } catch (error) {
       console.error("Error creating category:", error);
+      setFormError(getErrorMessage(error));
     } finally { setIsSaving(false); }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Seguro que quieres eliminar esta categoría? (Los productos asociados podrían perder su categoría)")) return;
+    if (!await confirmAction({ title: "Eliminar categoría", description: "Esta acción quitará el registro. Si está asociado a ventas u otros datos, el sistema conservará su historial e impedirá eliminarlo." })) return;
     try {
       await apiFetch(`/categories/${id}`, {
         method: "DELETE",
@@ -99,7 +108,7 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6 sm:items-center">
         <div className="flex items-center gap-4">
           <Link href="/admin">
             <Button variant="outline" size="icon" className="h-10 w-10 rounded-full">
@@ -114,14 +123,20 @@ export default function CategoriesPage() {
           </div>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={open => { if (!isSaving) setIsDialogOpen(open); }}>
-          <DialogTrigger render={<Button className="gap-2 bg-pink-600 hover:bg-pink-700 text-white"><Plus className="h-4 w-4" /> Añadir Categoría</Button>} />
+        <Dialog open={isDialogOpen} onOpenChange={open => {
+          if (isSaving) return;
+          setIsDialogOpen(open);
+          setFormError("");
+          if (!open) { setEditingId(null); setFormData({ name: "", description: "" }); }
+        }}>
+          <DialogTrigger render={<Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"><Plus className="h-4 w-4" /> Añadir Categoría</Button>} />
           <DialogContent className="sm:max-w-[425px]">
             <form onSubmit={handleSubmit}>
               <DialogHeader>
-                <DialogTitle>Nueva Categoría</DialogTitle>
+                <DialogTitle>{editingId ? "Editar categoría" : "Nueva categoría"}</DialogTitle>
               </DialogHeader>
               <div className="grid gap-4 py-4">
+                {formError && <p role="alert" className="rounded-lg bg-rose-400/10 p-3 text-sm text-rose-200">{formError}</p>}
                 <div className="grid gap-2">
                   <label htmlFor="name" className="text-sm font-medium">Nombre</label>
                   <Input id="name" name="name" maxLength={120} value={formData.name} onChange={handleInputChange} required />
@@ -133,7 +148,7 @@ export default function CategoriesPage() {
               </div>
               <DialogFooter>
                 <DialogClose render={<Button type="button" variant="outline">Cancelar</Button>} />
-                <Button type="submit" disabled={isSaving} className="bg-pink-600 hover:bg-pink-700 text-white">Guardar Categoría</Button>
+                <Button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary/90 text-primary-foreground">Guardar Categoría</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -170,10 +185,10 @@ export default function CategoriesPage() {
                     <TableCell>{category.description || "-"}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                        <Button aria-label={`Editar ${category.name}`} variant="ghost" size="icon" className="h-11 w-11 text-zinc-300 hover:bg-white/10" onClick={() => { setEditingId(category.id); setFormData({ name: category.name, description: category.description || "" }); setIsDialogOpen(true); }}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(category.id)}>
+                        <Button aria-label={`Eliminar ${category.name}`} variant="ghost" size="icon" className="h-11 w-11 text-rose-300 hover:bg-rose-400/10" onClick={() => handleDelete(category.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>

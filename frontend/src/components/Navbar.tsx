@@ -80,12 +80,14 @@ export function Navbar() {
     router.refresh();
   }
 
+  if (pathname.startsWith('/admin')) return null;
+
   return (
     <nav
       aria-label="Navegación principal"
-      className="sticky top-0 z-50 border-b border-white/10 bg-[#080307]/95 backdrop-blur-md"
+      className="sticky top-0 z-50 border-b border-white/5 bg-[#050103]/90 backdrop-blur-md"
     >
-      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-2 px-4">
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-2 px-4">
         <button
           aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
           aria-expanded={menuOpen}
@@ -98,18 +100,19 @@ export function Navbar() {
         <Link
           href="/"
           aria-label="YUNAN, inicio"
-          className="flex items-center gap-3"
+          className="group flex shrink-0 items-center gap-2 sm:gap-4"
         >
           <Image
             src="/logo-yunan2.png"
             alt=""
-            width={44}
-            height={44}
+            width={48}
+            height={48}
             preload
-            className="rounded-full"
+            className="h-10 w-10 rounded-full object-contain shadow-[0_0_15px_rgba(230,46,117,0.3)] transition-shadow group-hover:shadow-[0_0_20px_rgba(230,46,117,0.6)] sm:h-12 sm:w-12"
           />
-          <span className="font-serif text-2xl tracking-[0.12em] text-[#e3c193]">
-            YUNAN
+          <span className="flex flex-col">
+            <span className="bg-gradient-to-r from-pink-500 to-pink-400 bg-clip-text font-serif text-xl font-bold tracking-widest text-transparent drop-shadow-sm sm:text-3xl">YUNAN</span>
+            <span className="mt-0.5 hidden text-[10px] font-medium uppercase tracking-[0.2em] text-[#cfa873] sm:block">Moda femenina exclusiva</span>
           </span>
         </Link>
         <div className="hidden items-center gap-6 md:flex">
@@ -130,7 +133,7 @@ export function Navbar() {
               href="/admin"
               aria-label="Panel de administración"
               title="Administración"
-              className="flex h-11 w-11 items-center justify-center rounded-full text-[#e3c193] hover:bg-white/10"
+              className="hidden h-11 w-11 items-center justify-center rounded-full text-[#e3c193] hover:bg-white/10 sm:flex"
             >
               <LayoutDashboard size={20} />
             </Link>
@@ -185,6 +188,7 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
+          {isAdmin && <Link href="/admin" onClick={() => setOpenPath(null)} className="flex items-center gap-2 rounded-lg px-3 py-3 text-sm text-pink-300"><LayoutDashboard size={17} />Administración</Link>}
         </div>
       )}
     </nav>

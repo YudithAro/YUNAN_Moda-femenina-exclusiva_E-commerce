@@ -1,4 +1,5 @@
 "use client";
+import { useAdminRefresh } from "@/lib/use-admin-refresh";
 import { apiFetch } from "@/lib/api";
 
 import { useEffect, useState } from "react";
@@ -44,11 +45,13 @@ export default function CustomersPage() {
     }
   };
 
+  useAdminRefresh(fetchCustomers);
+
   useEffect(() => { void Promise.resolve().then(fetchCustomers); }, []);
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6 sm:items-center">
         <div className="flex items-center gap-4">
           <Link href="/admin">
             <Button variant="outline" size="icon" className="h-10 w-10 rounded-full">

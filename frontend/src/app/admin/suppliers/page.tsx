@@ -1,5 +1,7 @@
 "use client";
-import { apiFetch } from "@/lib/api";
+import { confirmAction } from "@/lib/confirm-action";
+import { useAdminRefresh } from "@/lib/use-admin-refresh";
+import { apiFetch, getErrorMessage } from "@/lib/api";
 
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,6 +48,7 @@ export default function SuppliersPage() {
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState("");
 
   const fetchSuppliers = async () => {
     try {
@@ -59,6 +62,8 @@ export default function SuppliersPage() {
     }
   };
 
+  useAdminRefresh(fetchSuppliers);
+
   useEffect(() => { void Promise.resolve().then(fetchSuppliers); }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,6 +75,7 @@ export default function SuppliersPage() {
     e.preventDefault();
     if (isSaving) return;
     setIsSaving(true);
+    setFormError("");
     try {
       await apiFetch(`/suppliers`, {
         method: "POST",
@@ -89,6 +95,7 @@ export default function SuppliersPage() {
       fetchSuppliers();
     } catch (error) {
       console.error("Error creating supplier:", error);
+      setFormError(getErrorMessage(error));
     } finally { setIsSaving(false); }
   };
 
@@ -108,7 +115,7 @@ export default function SuppliersPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Seguro que quieres eliminar este proveedor?")) return;
+    if (!await confirmAction({ title: "Eliminar proveedor", description: "Esta acción quitará el registro. Si está asociado a ventas u otros datos, el sistema conservará su historial e impedirá eliminarlo." })) return;
     try {
       await apiFetch(`/suppliers/${id}`, {
         method: "DELETE",
@@ -121,7 +128,7 @@ export default function SuppliersPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6 sm:items-center">
         <div className="flex items-center gap-4">
           <Link href="/admin">
             <Button variant="outline" size="icon" className="h-10 w-10 rounded-full">
@@ -136,14 +143,15 @@ export default function SuppliersPage() {
           </div>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={open => { if (!isSaving) setIsDialogOpen(open); }}>
-          <DialogTrigger render={<Button className="gap-2 bg-pink-600 hover:bg-pink-700 text-white"><Plus className="h-4 w-4" /> Añadir Proveedor</Button>} />
+        <Dialog open={isDialogOpen} onOpenChange={open => { if (!isSaving) { setIsDialogOpen(open); setFormError(""); } }}>
+          <DialogTrigger render={<Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"><Plus className="h-4 w-4" /> Añadir Proveedor</Button>} />
           <DialogContent className="sm:max-w-[425px]">
             <form onSubmit={handleSubmit}>
               <DialogHeader>
                 <DialogTitle>Nuevo Proveedor</DialogTitle>
               </DialogHeader>
               <div className="grid gap-4 py-4">
+                {formError && <p role="alert" className="rounded-lg bg-rose-400/10 p-3 text-sm text-rose-200">{formError}</p>}
                 <div className="grid gap-2">
                   <label htmlFor="name" className="text-sm font-medium">Empresa / Marca</label>
                   <div className="relative">
@@ -177,7 +185,7 @@ export default function SuppliersPage() {
               </div>
               <DialogFooter>
                 <DialogClose render={<Button type="button" variant="outline">Cancelar</Button>} />
-                <Button type="submit" disabled={isSaving} className="bg-pink-600 hover:bg-pink-700 text-white">Guardar Proveedor</Button>
+                <Button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary/90 text-primary-foreground">Guardar Proveedor</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -249,7 +257,7 @@ export default function SuppliersPage() {
                       </Button>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(supplier.id)}>
+                      <Button aria-label={`Eliminar ${supplier.name}`} variant="ghost" size="icon" className="h-11 w-11 text-rose-300 hover:bg-rose-400/10" onClick={() => handleDelete(supplier.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>

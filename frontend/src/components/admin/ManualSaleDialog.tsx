@@ -11,14 +11,13 @@ type Variant = { id: string; size: string | null; color: string | null; stock: n
 type SaleProduct = { id: string; name: string; price: string | number; stock: number; variants?: Variant[] };
 const emptyForm = { customerName: "", customerPhone: "", productId: "", variantId: "", quantity: "1" };
 
-export function ManualSaleDialog({ onSaved }: { onSaved: () => void | Promise<void> }) {
+export function ManualSaleDialog({ onSaved, compact = false }: { onSaved: () => void | Promise<void>; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [products, setProducts] = useState<SaleProduct[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const request = useRef<{ signature: string; id: string } | null>(null);
   const product = products.find(product => product.id === form.productId);
   const variant = product?.variants?.find(variant => variant.id === form.variantId);
@@ -50,43 +49,39 @@ export function ManualSaleDialog({ onSaved }: { onSaved: () => void | Promise<vo
       setForm(emptyForm);
       request.current = null;
       setOpen(false);
-      setSuccess("Venta registrada. El inventario se actualizó correctamente.");
       await onSaved();
     } catch (error) { setError(getErrorMessage(error)); }
     finally { setBusy(false); }
   };
 
-  return <div className="space-y-2">
-    {success && <p role="status" className="text-sm text-emerald-600 dark:text-emerald-300">{success}</p>}
-    <Dialog open={open} onOpenChange={value => { if (busy) return; setOpen(value); if (value) { setSuccess(""); void loadProducts(); } }}>
-      <DialogTrigger render={<Button className="gap-2 bg-green-600 hover:bg-green-700 text-white"><Plus className="h-4 w-4" />Registrar venta WhatsApp</Button>} />
+  return <Dialog open={open} onOpenChange={value => { if (busy) return; setOpen(value); if (value) void loadProducts(); }}>
+      <DialogTrigger render={<Button aria-label="Registrar venta" className="min-h-11 gap-2 rounded-xl bg-primary px-3 font-semibold text-primary-foreground hover:bg-primary/90"><Plus className="h-4 w-4" />{compact ? <><span className="md:hidden">Venta</span><span className="hidden md:inline">Registrar venta</span></> : <span>Registrar venta</span>}</Button>} />
       <DialogContent className="sm:max-w-[460px] max-h-[90dvh] overflow-y-auto">
         <form onSubmit={save}>
           <DialogHeader><DialogTitle>Registrar venta pagada</DialogTitle></DialogHeader>
           <p className="mt-2 text-sm text-muted-foreground">Registra esta venta cuando hayas confirmado el pago del cliente.</p>
           <div className="grid gap-4 py-4">
             {error && <div role="alert" className="rounded-lg bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-300">{error}</div>}
-            <label className="grid gap-2 text-sm">Nombre del cliente<Input required maxLength={150} autoComplete="name" value={form.customerName} onChange={event => setForm({ ...form, customerName: event.target.value })} /></label>
-            <label className="grid gap-2 text-sm">Teléfono (WhatsApp)<Input required type="tel" maxLength={30} autoComplete="tel" value={form.customerPhone} onChange={event => setForm({ ...form, customerPhone: event.target.value })} /></label>
+            <label className="grid gap-2 text-sm">Nombre del cliente<Input aria-label="Nombre del cliente" required maxLength={150} autoComplete="name" value={form.customerName} onChange={event => setForm({ ...form, customerName: event.target.value })} /></label>
+            <label className="grid gap-2 text-sm">Teléfono (WhatsApp)<Input aria-label="Teléfono (WhatsApp)" required type="tel" maxLength={30} autoComplete="tel" value={form.customerPhone} onChange={event => setForm({ ...form, customerPhone: event.target.value })} /></label>
             <label className="grid gap-2 text-sm">Producto
-              <select required disabled={loading || busy} value={form.productId} onChange={event => setForm({ ...form, productId: event.target.value, variantId: "", quantity: "1" })} className="h-11 w-full rounded-lg border border-input bg-background px-3 text-foreground">
+              <select aria-label="Producto" required disabled={loading || busy} value={form.productId} onChange={event => setForm({ ...form, productId: event.target.value, variantId: "", quantity: "1" })} className="h-11 w-full rounded-lg border border-input bg-background px-3 text-foreground">
                 <option value="">{loading ? "Cargando productos..." : "Seleccionar producto"}</option>
                 {products.map(product => <option key={product.id} value={product.id} disabled={Number(product.stock) <= 0}>{product.name} — S/ {Number(product.price).toFixed(2)} — {product.stock} disponibles</option>)}
               </select>
             </label>
             {!!product?.variants?.length && <label className="grid gap-2 text-sm">Talla y color
-              <select required disabled={busy} value={form.variantId} onChange={event => setForm({ ...form, variantId: event.target.value, quantity: "1" })} className="h-11 rounded-lg border border-input bg-background px-3 text-foreground">
+              <select aria-label="Talla y color" required disabled={busy} value={form.variantId} onChange={event => setForm({ ...form, variantId: event.target.value, quantity: "1" })} className="h-11 rounded-lg border border-input bg-background px-3 text-foreground">
                 <option value="">Seleccionar combinación</option>
                 {product.variants.map(variant => <option key={variant.id} value={variant.id} disabled={Number(variant.stock) <= 0}>{[variant.size, variant.color].filter(Boolean).join(" / ") || "Única"} — {variant.stock} disponibles</option>)}
               </select>
             </label>}
-            <label className="grid gap-2 text-sm">Cantidad<Input required type="number" min={1} step={1} max={available || 1} disabled={busy || !available} value={form.quantity} onChange={event => setForm({ ...form, quantity: event.target.value })} /></label>
+            <label className="grid gap-2 text-sm">Cantidad<Input aria-label="Cantidad" required type="number" min={1} step={1} max={available || 1} disabled={busy || !available} value={form.quantity} onChange={event => setForm({ ...form, quantity: event.target.value })} /></label>
             {product && <p className="text-sm text-muted-foreground">Total: S/ {(Number(product.price) * Number(form.quantity || 0)).toFixed(2)} · {available} disponibles</p>}
             {!loading && !products.length && <Button type="button" variant="outline" onClick={() => void loadProducts()}>Reintentar carga de productos</Button>}
           </div>
           <DialogFooter><Button type="button" variant="outline" disabled={busy} onClick={() => setOpen(false)}>Cerrar</Button><Button type="submit" disabled={busy || loading || !available}>{busy ? "Guardando..." : "Registrar venta pagada"}</Button></DialogFooter>
         </form>
       </DialogContent>
-    </Dialog>
-  </div>;
+    </Dialog>;
 }

@@ -1,5 +1,7 @@
 "use client";
-import { apiFetch } from "@/lib/api";
+import { confirmAction } from "@/lib/confirm-action";
+import { useAdminRefresh } from "@/lib/use-admin-refresh";
+import { apiFetch, getErrorMessage } from "@/lib/api";
 
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -52,6 +54,7 @@ export default function CouponsPage() {
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState("");
 
   const fetchCoupons = async () => {
     try {
@@ -64,6 +67,8 @@ export default function CouponsPage() {
       setLoading(false);
     }
   };
+
+  useAdminRefresh(fetchCoupons);
 
   useEffect(() => { void Promise.resolve().then(fetchCoupons); }, []);
 
@@ -80,6 +85,7 @@ export default function CouponsPage() {
     e.preventDefault();
     if (isSaving) return;
     setIsSaving(true);
+    setFormError("");
     try {
       await apiFetch(`/coupons`, {
         method: "POST",
@@ -98,6 +104,7 @@ export default function CouponsPage() {
       fetchCoupons();
     } catch (error) {
       console.error("Error creating coupon:", error);
+      setFormError(getErrorMessage(error));
     } finally { setIsSaving(false); }
   };
 
@@ -117,7 +124,7 @@ export default function CouponsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Seguro que quieres eliminar este cupón?")) return;
+    if (!await confirmAction({ title: "Eliminar cupón", description: "Esta acción quitará el registro. Si está asociado a ventas u otros datos, el sistema conservará su historial e impedirá eliminarlo." })) return;
     try {
       await apiFetch(`/coupons/${id}`, {
         method: "DELETE",
@@ -130,7 +137,7 @@ export default function CouponsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6 sm:items-center">
         <div className="flex items-center gap-4">
           <Link href="/admin">
             <Button variant="outline" size="icon" className="h-10 w-10 rounded-full">
@@ -145,14 +152,15 @@ export default function CouponsPage() {
           </div>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={open => { if (!isSaving) setIsDialogOpen(open); }}>
-          <DialogTrigger render={<Button className="gap-2 bg-pink-600 hover:bg-pink-700 text-white"><Plus className="h-4 w-4" /> Crear Cupón</Button>} />
+        <Dialog open={isDialogOpen} onOpenChange={open => { if (!isSaving) { setIsDialogOpen(open); setFormError(""); } }}>
+          <DialogTrigger render={<Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"><Plus className="h-4 w-4" /> Crear Cupón</Button>} />
           <DialogContent className="sm:max-w-[425px]">
             <form onSubmit={handleSubmit}>
               <DialogHeader>
                 <DialogTitle>Nuevo Cupón</DialogTitle>
               </DialogHeader>
               <div className="grid gap-4 py-4">
+                {formError && <p role="alert" className="rounded-lg bg-rose-400/10 p-3 text-sm text-rose-200">{formError}</p>}
                 <div className="grid gap-2">
                   <label htmlFor="code" className="text-sm font-medium">Código del Cupón</label>
                   <div className="relative">
@@ -207,7 +215,7 @@ export default function CouponsPage() {
               </div>
               <DialogFooter>
                 <DialogClose render={<Button type="button" variant="outline">Cancelar</Button>} />
-                <Button type="submit" disabled={isSaving} className="bg-pink-600 hover:bg-pink-700 text-white">Generar Cupón</Button>
+                <Button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary/90 text-primary-foreground">Generar Cupón</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -248,7 +256,7 @@ export default function CouponsPage() {
                         <span className="font-mono font-bold tracking-wider">{coupon.code}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium text-pink-600 dark:text-pink-400">
+                    <TableCell className="font-medium text-pink-600 dark:text-zinc-300">
                       {coupon.type === "PERCENTAGE" ? (
                         `-${Number(coupon.discount)}%`
                       ) : (
@@ -271,7 +279,7 @@ export default function CouponsPage() {
                       </Button>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(coupon.id)}>
+                      <Button aria-label={`Eliminar cupón ${coupon.code}`} variant="ghost" size="icon" className="h-11 w-11 text-rose-300 hover:bg-rose-400/10" onClick={() => handleDelete(coupon.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>

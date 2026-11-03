@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { StoreBackdrop } from "@/components/StoreBackdrop";
 import {
   Camera,
   Clock,
@@ -26,8 +27,9 @@ export default function NosotrosPage() {
     "mb-5 flex items-center gap-3 font-serif text-xl text-[#e3c193]";
 
   return (
-    <div className="min-h-screen bg-[#050103] px-4 py-10 text-white md:py-16">
-      <div className="mx-auto max-w-5xl">
+    <div className="relative isolate min-h-screen bg-[#030001] px-4 py-10 text-white md:py-16">
+      <StoreBackdrop />
+      <div className="relative z-10 mx-auto max-w-5xl">
         <header className="mx-auto mb-10 max-w-3xl text-center">
           <p className="mb-4 text-xs uppercase tracking-[0.25em] text-[#cfa873]">
             Nuestra esencia
