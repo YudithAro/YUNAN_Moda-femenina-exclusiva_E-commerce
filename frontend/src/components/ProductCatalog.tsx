@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ImageIcon, Search, SlidersHorizontal, X } from "lucide-react";
 import { ProductImage } from "@/components/ProductImage";
@@ -68,27 +69,24 @@ export function ProductCatalog({ mode = "collection" }: { mode?: "home" | "colle
   ];
   const reset = () => { setFilters(emptySelection); setSearch(""); };
   const retry = () => { setLoading(true); setError(""); setAttempt(value => value + 1); };
-  const featured = products.find(product => productStock(product) > 0 && product.images?.[0]);
-
   return <div className="relative isolate min-h-screen bg-[#030001] text-white selection:bg-[#cfac78] selection:text-black">
     <StoreBackdrop />
-    <header className="relative z-10 border-b border-white/5 px-4 py-9 md:py-11">
-      <div className="mx-auto grid max-w-7xl items-center gap-8 md:min-h-56 md:grid-cols-[1fr_240px]">
-        <div>
-          <p className="mb-3 text-sm font-medium text-zinc-400">YUNAN · Moda femenina</p>
-          <h1 className="max-w-3xl font-serif text-4xl leading-tight md:text-5xl">
-            {mode === "home" ? "Tu estilo, tu esencia." : mode === "new" ? "Nuevos ingresos" : "Nuestra colección"}
-          </h1>
-          <p className="mt-4 max-w-xl text-sm leading-7 text-zinc-300 md:text-base">
-            {mode === "home" ? "Prendas para sentirte tú. Encuentra tu favorita y elige cómo llevarla."
-              : mode === "new" ? "Descubre las últimas prendas que llegaron a YUNAN." : "Explora las prendas, encuentra tu talla y consulta con nuestro equipo."}
-          </p>
-          {mode === "home" && <a href="#catalogo" className={`${action} mt-5`}>Explorar colección <ArrowRight size={17} /></a>}
-        </div>
-        {featured && <Link href={`/producto/${featured.id}`} aria-label={`Descubrir ${featured.name}`} className="relative hidden h-56 overflow-hidden rounded-2xl bg-[#ede9e3] md:block">
-          <ProductImage src={featured.images?.[0]} alt={featured.name} sizes="240px" preload className="p-2" />
-        </Link>}
-      </div>
+    <header className={`relative z-10 border-b border-white/5 px-4 ${mode === "home" ? "py-12 md:py-16" : "py-9 md:py-11"}`}>
+      {mode === "home" ? <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
+        <Image src="/logo-yunan2.png" alt="Logo de YUNAN" width={160} height={160} preload
+          className="h-28 w-28 rounded-full border border-[#cfa873]/25 object-cover shadow-[0_0_50px_rgba(207,168,115,0.18)] sm:h-36 sm:w-36" />
+        <p className="mt-6 text-xs font-semibold uppercase tracking-[0.25em] text-[#cfa873]">Exclusividad &amp; elegancia</p>
+        <h1 className="mt-4 font-serif text-4xl leading-tight sm:text-5xl md:text-7xl">
+          <span className="block font-light text-white">COLECCIÓN</span>
+          <span className="block bg-gradient-to-r from-[#e3c193] via-[#cfa873] to-[#a38051] bg-clip-text text-transparent">PREMIUM</span>
+        </h1>
+        <p className="mt-5 max-w-xl text-sm leading-7 text-zinc-300 md:text-base">Prendas únicas para sentirte tú, con belleza, seguridad y estilo.</p>
+        <a href="#catalogo" className={`${action} mt-6`}>Ver catálogo <ArrowRight size={17} /></a>
+      </div> : <div className="mx-auto max-w-7xl">
+        <p className="mb-3 text-sm font-medium text-zinc-400">YUNAN · Moda femenina</p>
+        <h1 className="font-serif text-4xl leading-tight md:text-5xl">{mode === "new" ? "Nuevos ingresos" : "Nuestra colección"}</h1>
+        <p className="mt-4 max-w-xl text-sm leading-7 text-zinc-300 md:text-base">{mode === "new" ? "Descubre las últimas prendas que llegaron a YUNAN." : "Explora las prendas, encuentra tu talla y consulta con nuestro equipo."}</p>
+      </div>}
     </header>
 
     <section id="catalogo" aria-label="Catálogo de prendas" className="relative z-10 mx-auto max-w-7xl scroll-mt-24 px-4 py-7 md:py-10">
@@ -148,9 +146,9 @@ export function ProductCatalog({ mode = "collection" }: { mode?: "home" | "colle
           const images = product.images?.length ? product.images : product.image ? [product.image] : [];
           const availableSizes = product.variants?.length ? [...new Set(product.variants.filter(variant => Number(variant.stock) > 0).map(variant => variant.size).filter(Boolean))] : productOptions(product, "size");
           return <article key={product.id} className="product-card group min-w-0">
-            <Link href={`/producto/${product.id}`} aria-label={`Ver ${product.name}`} className="relative block aspect-[3/4] overflow-hidden rounded-2xl bg-[#ede9e3] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#cfac78]">
-              <ProductImage src={images[0]} alt={product.name} sizes="(max-width: 767px) 50vw, (max-width: 1023px) 33vw, 25vw" preload={index < 2} className="p-1 transition-transform duration-500 group-hover:scale-[1.025]" />
-              {images[1] && <div className="product-secondary-image absolute inset-0 bg-[#ede9e3]"><ProductImage src={images[1]} alt={`${product.name}, segunda vista`} sizes="(max-width: 767px) 50vw, 25vw" className="p-1" /></div>}
+            <Link href={`/producto/${product.id}`} aria-label={`Ver ${product.name}`} className="relative block aspect-[3/4] overflow-hidden rounded-2xl bg-[#140b10] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#cfac78]">
+              <ProductImage src={images[0]} alt={product.name} sizes="(max-width: 767px) 50vw, (max-width: 1023px) 33vw, 25vw" preload={index < 2} fit="cover" className="object-center transition-transform duration-500 group-hover:scale-[1.025]" />
+              {images[1] && <div className="product-secondary-image absolute inset-0 bg-[#140b10]"><ProductImage src={images[1]} alt={`${product.name}, segunda vista`} sizes="(max-width: 767px) 50vw, 25vw" fit="cover" className="object-center" /></div>}
               <span className={`absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium ${available ? "bg-white/95 text-stone-800" : "bg-stone-900/90 text-white"}`}>
                 {available && <span className="h-1.5 w-1.5 rounded-full bg-emerald-700" />}{available ? "Disponible" : "Agotado"}
               </span>
