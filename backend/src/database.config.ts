@@ -1,4 +1,5 @@
 import type { PoolConfig } from 'pg';
+import { readFileSync } from 'node:fs';
 
 const sslParameters = new Set(['ssl', 'sslmode', 'sslcert', 'sslkey', 'sslrootcert', 'uselibpqcompat', 'sslnegotiation']);
 
@@ -41,7 +42,9 @@ export function databaseOptions(env: NodeJS.ProcessEnv = process.env): PoolConfi
     idleTimeoutMillis: 30000,
     ssl: tls ? {
       rejectUnauthorized: env.DATABASE_SSL_REJECT_UNAUTHORIZED !== 'false',
-      ...(env.DATABASE_SSL_CA ? { ca: env.DATABASE_SSL_CA.replace(/\\n/g, '\n') } : {}),
+      ...(env.DATABASE_SSL_CA
+        ? { ca: env.DATABASE_SSL_CA.replace(/\\n/g, '\n') }
+        : supabase ? { ca: readFileSync(new URL('../certs/supabase-root-2021.crt', import.meta.url), 'utf8') } : {}),
     } : false,
   };
 }

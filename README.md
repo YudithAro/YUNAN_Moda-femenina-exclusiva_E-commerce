@@ -72,6 +72,8 @@ npm run migrate:safe
 
 Render proporciona `PORT`. Agregar dominios propios o previews a `CORS_ORIGINS` explícitamente si deben usar la API. La verificación TLS permanece activa; si falta un certificado, configurar la CA antes de desplegar.
 
+El servicio Render existente reconoce su hostname y permite por defecto únicamente el dominio actual de Vercel. Para otro servicio de producción se exige `CORS_ORIGINS`. El certificado raíz público de Supabase se incluye en `backend/certs`; `DATABASE_SSL_CA` permite sustituirlo si el proveedor cambia su CA. El arranque en Render verifica las columnas necesarias antes de aceptar tráfico.
+
 Los parámetros SSL de `DATABASE_URL` se normalizan para que no descarten la CA ni cambien la política TLS. Configurar esas opciones mediante `DATABASE_SSL`, `DATABASE_SSL_REJECT_UNAUTHORIZED` y `DATABASE_SSL_CA`. El tamaño del pool admite entre 1 y 50 conexiones; valor inicial 5.
 
 La migración de acceso habilita RLS y retira permisos directos de `PUBLIC`, `anon` y `authenticated` sobre las tablas comerciales. El navegador accede a ellas mediante Render. El propietario y los roles con permisos explícitos/BYPASSRLS conservan acceso. El bucket público `products` sigue sirviendo fotografías; no se modifican sus políticas con esta migración.

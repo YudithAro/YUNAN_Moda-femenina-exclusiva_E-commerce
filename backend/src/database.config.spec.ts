@@ -1,6 +1,10 @@
 import pg from 'pg';
 import { describe, expect, it } from 'vitest';
 import { databaseOptions } from './database.config.js';
+import { readFileSync } from 'node:fs';
+import { X509Certificate } from 'node:crypto';
+
+const defaultCertificate = readFileSync(new URL('../certs/supabase-root-2021.crt', import.meta.url), 'utf8');
 
 const cloud = 'postgresql://user:fake@project.supabase.co:5432/postgres';
 const local = 'postgresql://user:fake@localhost:5432/postgres';
@@ -18,7 +22,14 @@ describe('PostgreSQL TLS configuration', () => {
   });
 
   it('detects the Supabase pooler by hostname', () => {
-    expect(actualSsl({ DATABASE_URL: 'postgresql://user:fake@aws-0-us-east-1.pooler.supabase.com:5432/postgres' })).toEqual({ rejectUnauthorized: true });
+    expect(actualSsl({ DATABASE_URL: 'postgresql://user:fake@aws-0-us-east-1.pooler.supabase.com:5432/postgres' })).toEqual({ rejectUnauthorized: true, ca: defaultCertificate });
+  });
+
+  it('ships the verified public Supabase root certificate', () => {
+    const certificate = new X509Certificate(defaultCertificate);
+    expect(certificate.fingerprint256.replaceAll(':', '').toLowerCase()).toBe('807025ad50d4ed219d2c9c7d299c004f824eb00cf7f65afef607d07b72e6cafa');
+    expect(certificate.ca).toBe(true);
+    expect(Date.parse(certificate.validTo)).toBeGreaterThan(Date.now());
   });
 
   it('does not infer TLS from credentials or lookalike domains', () => {
@@ -38,14 +49,14 @@ describe('PostgreSQL TLS configuration', () => {
   });
 
   it('permits disabling verification only by explicit environment configuration', () => {
-    expect(actualSsl({ DATABASE_URL: cloud, DATABASE_SSL_REJECT_UNAUTHORIZED: 'false' })).toEqual({ rejectUnauthorized: false });
+    expect(actualSsl({ DATABASE_URL: cloud, DATABASE_SSL_REJECT_UNAUTHORIZED: 'false' })).toEqual({ rejectUnauthorized: false, ca: defaultCertificate });
   });
 
   it('preserves unrelated query parameters and removes certificate-file options', () => {
     const config = databaseOptions({ DATABASE_URL: cloud + '?application_name=yunan&sslmode=require&sslcert=ignored&sslkey=ignored&sslrootcert=ignored&sslnegotiation=direct' });
     const parsed = new URL(config.connectionString!);
     expect([...parsed.searchParams.entries()]).toEqual([['application_name', 'yunan']]);
-    expect(actualSsl({ DATABASE_URL: config.connectionString })).toEqual({ rejectUnauthorized: true });
+    expect(actualSsl({ DATABASE_URL: config.connectionString })).toEqual({ rejectUnauthorized: true, ca: defaultCertificate });
   });
 
   it.each(['0', '-1', '1.5', '51', 'invalid', 'Infinity'])('rejects invalid pool size %s', max => {

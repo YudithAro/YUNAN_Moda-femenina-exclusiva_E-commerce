@@ -2,14 +2,19 @@ import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import { HttpErrorFilter } from './http-error.filter.js';
+import { corsOrigins } from './deployment.config.js';
+import { pool } from './database.js';
 
 async function bootstrap() {
   for (const key of ['DATABASE_URL', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY']) {
     if (!process.env[key]) throw new Error(`Falta configurar ${key}.`);
   }
-  const origins = (process.env.CORS_ORIGINS || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:4000'))
-    .split(',').map(value => value.trim()).filter(Boolean);
-  if (!origins.length) throw new Error('Configura CORS_ORIGINS con el dominio del frontend en Vercel.');
+  const origins = corsOrigins();
+  if (process.env.RENDER === 'true') {
+    // Do not accept traffic until this release's schema and TLS connection work.
+    await pool.query('SELECT "inventoryReserved", "idempotencyKey", "requestFingerprint" FROM "order" LIMIT 0');
+    await pool.query('SELECT "variantId", size, color FROM "orderItem" LIMIT 0');
+  }
   const app = await NestFactory.create(AppModule);
   app.enableCors({ origin: origins, methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS'], allowedHeaders: ['Authorization', 'Content-Type'] });
   app.useGlobalFilters(new HttpErrorFilter());

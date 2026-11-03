@@ -15,6 +15,7 @@ export class AppController {
   @Get('health')
   @Public()
   health() {
-    return { status: 'ok' };
+    const revision = process.env.RENDER_GIT_COMMIT;
+    return { status: 'ok', ...(/^[a-f0-9]{40}$/i.test(revision || '') ? { revision } : {}) };
   }
 }
