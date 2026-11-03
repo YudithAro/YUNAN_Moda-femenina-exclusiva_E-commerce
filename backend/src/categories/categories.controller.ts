@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
+import { Inject, Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
 import { CategoriesService } from './categories.service.js';
+import { Public } from '../auth/access.decorator.js';
 
 @Controller('categories')
 export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) {}
+  constructor(@Inject(CategoriesService) private readonly categoriesService: CategoriesService) {}
 
   @Post()
   create(@Body() createCategoryDto: any) {
@@ -11,11 +12,13 @@ export class CategoriesController {
   }
 
   @Get()
+  @Public()
   findAll() {
     return this.categoriesService.findAll();
   }
 
   @Get(':id')
+  @Public()
   findOne(@Param('id') id: string) {
     return this.categoriesService.findOne(id);
   }

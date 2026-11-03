@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
+import { Inject, Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
 import { CouponsService } from './coupons.service.js';
 
 @Controller('coupons')
 export class CouponsController {
-  constructor(private readonly couponsService: CouponsService) {}
+  constructor(@Inject(CouponsService) private readonly couponsService: CouponsService) {}
 
   @Post()
   create(@Body() createCouponDto: any) {

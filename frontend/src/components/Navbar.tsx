@@ -1,117 +1,192 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Button } from "./ui/button";
-import { ShoppingBag, User, LogOut, LayoutDashboard, Menu, X } from "lucide-react";
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  ShoppingBag,
+  User,
+  X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+
+const links = [
+  { href: "/", label: "Inicio" },
+  { href: "/coleccion", label: "Colección" },
+  { href: "/novedades", label: "Novedades" },
+  { href: "/nosotros", label: "Nosotros" },
+];
 
 export function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [openPath, setOpenPath] = useState<string | null>(null);
+  const [logoutError, setLogoutError] = useState("");
   const pathname = usePathname();
+  const router = useRouter();
+  const menuOpen = openPath === pathname;
 
   useEffect(() => {
-    setIsLoggedIn(!!localStorage.getItem("token"));
+    let active = true;
+    let authVersion = 0;
+    const updateSession = async (token?: string) => {
+      const version = ++authVersion;
+      if (!active) return;
+      setIsLoggedIn(Boolean(token));
+      setIsAdmin(false);
+      if (!token) return;
+      try {
+        const base = (
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+        ).replace(/\/$/, "");
+        const response = await fetch(`${base}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: AbortSignal.timeout(30000),
+        });
+        if (response.ok) {
+          const user: { role: string } = await response.json();
+          if (active && version === authVersion)
+            setIsAdmin(user.role === "ADMIN");
+        }
+      } catch {
+        /* Navigation remains available while account status is unavailable. */
+      }
+    };
+    supabase.auth.getSession().then(({ data }) => {
+      void updateSession(data.session?.access_token);
+    });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      void updateSession(session?.access_token);
+    });
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    window.location.href = "/";
-  };
+  async function logout() {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      setLogoutError("No pudimos cerrar la sesión. Inténtalo nuevamente.");
+      return;
+    }
+    router.push("/");
+    router.refresh();
+  }
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-white/5 bg-[#050103]/90 backdrop-blur-md">
-      <div className="container mx-auto flex h-20 items-center justify-between px-4 lg:px-8">
-        
-        {/* Mobile Menu Toggle */}
-        <button 
-          className="md:hidden text-white p-2"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+    <nav
+      aria-label="Navegación principal"
+      className="sticky top-0 z-50 border-b border-white/10 bg-[#080307]/95 backdrop-blur-md"
+    >
+      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-2 px-4">
+        <button
+          aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+          aria-expanded={menuOpen}
+          aria-controls="mobile-navigation"
+          onClick={() => setOpenPath(menuOpen ? null : pathname)}
+          className="flex h-11 w-11 items-center justify-center rounded-lg text-white hover:bg-white/10 md:hidden"
         >
-          {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          {menuOpen ? <X size={23} /> : <Menu size={23} />}
         </button>
-
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 sm:gap-4 group">
-          <img 
-            src="/logo-yunan2.png" 
-            alt="YUNAN Logo" 
-            className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-contain shadow-[0_0_15px_rgba(230,46,117,0.3)] group-hover:shadow-[0_0_20px_rgba(230,46,117,0.6)] transition-all"
+        <Link
+          href="/"
+          aria-label="YUNAN, inicio"
+          className="flex items-center gap-3"
+        >
+          <Image
+            src="/logo-yunan2.png"
+            alt=""
+            width={44}
+            height={44}
+            preload
+            className="rounded-full"
           />
-          <div className="flex flex-col">
-            <span className="font-serif text-xl sm:text-3xl tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-pink-400 font-bold drop-shadow-sm">YUNAN</span>
-            <span className="hidden sm:block text-[10px] text-[#cfa873] tracking-[0.2em] uppercase mt-0.5 font-medium">Moda femenina exclusiva</span>
-          </div>
+          <span className="font-serif text-2xl tracking-[0.12em] text-[#e3c193]">
+            YUNAN
+          </span>
         </Link>
-        
-        {/* Desktop Links */}
-        <div className="hidden md:flex items-center space-x-8 lg:space-x-10 text-xs font-semibold tracking-widest uppercase text-gray-300">
-          <Link href="/" className={`transition-colors py-2 border-b-2 ${pathname === '/' ? 'text-[#cfa873] border-[#cfa873]' : 'border-transparent hover:text-pink-400'}`}>Inicio</Link>
-          <Link href="/coleccion" className={`transition-colors py-2 border-b-2 ${pathname.startsWith('/coleccion') ? 'text-[#cfa873] border-[#cfa873]' : 'border-transparent hover:text-pink-400'}`}>Colección</Link>
-          <Link href="/novedades" className={`transition-colors py-2 border-b-2 ${pathname.startsWith('/novedades') ? 'text-[#cfa873] border-[#cfa873]' : 'border-transparent hover:text-pink-400'}`}>Novedades</Link>
-          <Link href="/nosotros" className={`transition-colors py-2 border-b-2 ${pathname.startsWith('/nosotros') ? 'text-[#cfa873] border-[#cfa873]' : 'border-transparent hover:text-pink-400'}`}>Sobre Nosotros</Link>
+        <div className="hidden items-center gap-6 md:flex">
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              aria-current={pathname === link.href ? "page" : undefined}
+              className={`py-3 text-xs font-semibold tracking-wide transition-colors ${pathname === link.href ? "text-[#e3c193]" : "text-zinc-300 hover:text-white"}`}
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
-        
-        {/* Right Actions */}
-        <div className="flex items-center space-x-2 sm:space-x-4">
-          {isLoggedIn ? (
-            <>
-              <Link href="/admin">
-                <Button variant="ghost" size="icon" className="md:hidden text-pink-400 rounded-full h-10 w-10">
-                  <LayoutDashboard className="h-5 w-5" />
-                </Button>
-                <Button variant="ghost" className="hidden md:flex gap-2 text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 uppercase tracking-widest text-[10px] font-bold rounded-full px-5 py-5 transition-all">
-                  <LayoutDashboard className="h-4 w-4" />
-                  <span>Dashboard</span>
-                </Button>
-              </Link>
-              <Button onClick={handleLogout} variant="ghost" size="icon" className="md:hidden text-gray-400 rounded-full h-10 w-10">
-                <LogOut className="h-5 w-5" />
-              </Button>
-              <Button onClick={handleLogout} variant="ghost" className="hidden md:flex gap-2 text-gray-400 hover:text-white hover:bg-white/10 uppercase tracking-widest text-[10px] font-bold rounded-full px-5 py-5 transition-all">
-                <LogOut className="h-4 w-4" />
-                <span>Salir</span>
-              </Button>
-            </>
-          ) : (
-            <Link href="/auth/login">
-              <Button variant="ghost" size="icon" className="md:hidden text-pink-400 rounded-full h-10 w-10">
-                <User className="h-5 w-5" />
-              </Button>
-              <Button variant="ghost" className="hidden md:flex gap-2 text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 uppercase tracking-widest text-[10px] font-bold rounded-full px-5 py-5 transition-all">
-                <User className="h-4 w-4" />
-                <span>Iniciar Sesión</span>
-              </Button>
+        <div className="flex items-center gap-1 sm:gap-2">
+          {isAdmin && (
+            <Link
+              href="/admin"
+              aria-label="Panel de administración"
+              title="Administración"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-[#e3c193] hover:bg-white/10"
+            >
+              <LayoutDashboard size={20} />
             </Link>
           )}
-
-          <Button className="gap-2 bg-gradient-to-r from-pink-600 to-pink-500 text-white rounded-full px-4 sm:px-6 py-4 sm:py-5 shadow-[0_0_15px_rgba(230,46,117,0.3)] hover:shadow-[0_0_25px_rgba(230,46,117,0.6)] hover:scale-105 transition-all uppercase tracking-widest text-[10px] font-bold border border-pink-400/30">
-            <ShoppingBag className="h-4 w-4 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline-block">Comprar</span>
-          </Button>
+          {isLoggedIn ? (
+            <button
+              onClick={logout}
+              aria-label="Cerrar sesión"
+              title="Cerrar sesión"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-zinc-300 hover:bg-white/10"
+            >
+              <LogOut size={20} />
+            </button>
+          ) : (
+            <Link
+              href="/auth/login"
+              aria-label="Iniciar sesión"
+              title="Iniciar sesión"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-zinc-300 hover:bg-white/10"
+            >
+              <User size={20} />
+            </Link>
+          )}
+          <Link
+            href="/coleccion"
+            aria-label="Comprar, explorar colección"
+            className="flex min-h-11 items-center gap-2 rounded-full bg-[#cfa873] px-3 text-xs font-semibold text-black hover:bg-[#e3c193]"
+          >
+            <ShoppingBag size={17} />
+            <span className="hidden sm:inline">Comprar</span>
+          </Link>
         </div>
       </div>
-
-      {/* Mobile Menu Dropdown */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div 
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="md:hidden border-t border-white/5 bg-[#0a0508]/95 backdrop-blur-xl overflow-hidden"
-          >
-            <div className="flex flex-col space-y-4 p-6 text-sm font-semibold tracking-widest uppercase text-gray-300">
-              <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className={`transition-colors py-2 ${pathname === '/' ? 'text-[#cfa873]' : 'hover:text-pink-400'}`}>Inicio</Link>
-              <Link href="/coleccion" onClick={() => setIsMobileMenuOpen(false)} className={`transition-colors py-2 ${pathname.startsWith('/coleccion') ? 'text-[#cfa873]' : 'hover:text-pink-400'}`}>Colección</Link>
-              <Link href="/novedades" onClick={() => setIsMobileMenuOpen(false)} className={`transition-colors py-2 ${pathname.startsWith('/novedades') ? 'text-[#cfa873]' : 'hover:text-pink-400'}`}>Novedades</Link>
-              <Link href="/nosotros" onClick={() => setIsMobileMenuOpen(false)} className={`transition-colors py-2 ${pathname.startsWith('/nosotros') ? 'text-[#cfa873]' : 'hover:text-pink-400'}`}>Sobre Nosotros</Link>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {logoutError && (
+        <p role="alert" className="px-4 pb-3 text-center text-sm text-rose-300">
+          {logoutError}
+        </p>
+      )}
+      {menuOpen && (
+        <div
+          id="mobile-navigation"
+          className="flex flex-col border-t border-white/10 px-4 py-2 md:hidden"
+        >
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setOpenPath(null)}
+              aria-current={pathname === link.href ? "page" : undefined}
+              className={`rounded-lg px-3 py-3 text-sm ${pathname === link.href ? "text-[#e3c193]" : "text-zinc-200"}`}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
+      )}
     </nav>
   );
 }

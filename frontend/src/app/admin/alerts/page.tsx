@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api";
 
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,7 +29,7 @@ export default function StockAlertsPage() {
 
   const fetchLowStock = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/products/low-stock`);
+      const res = await apiFetch(`/products/low-stock`);
       const data = await res.json();
       setProducts(data);
     } catch (error) {
@@ -38,9 +39,7 @@ export default function StockAlertsPage() {
     }
   };
 
-  useEffect(() => {
-    fetchLowStock();
-  }, []);
+  useEffect(() => { void Promise.resolve().then(fetchLowStock); }, []);
 
   return (
     <div className="space-y-8">
@@ -71,7 +70,7 @@ export default function StockAlertsPage() {
             <p className="text-red-600/80 dark:text-red-400/80 text-sm font-medium">Agotados Completamente</p>
           </div>
         </div>
-        
+
         <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/50 rounded-xl p-6 flex items-center gap-4">
           <div className="p-3 bg-amber-100 text-amber-600 rounded-full dark:bg-amber-900/30">
             <AlertTriangle className="h-8 w-8" />
@@ -110,7 +109,7 @@ export default function StockAlertsPage() {
                 products.map((product) => {
                   const isOutOfStock = product.stock === 0;
                   const isCritical = product.stock > 0 && product.stock <= 5;
-                  
+
                   return (
                     <TableRow key={product.id}>
                       <TableCell className="font-medium">{product.name}</TableCell>

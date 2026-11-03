@@ -1,11 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import pg from 'pg';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { pool } from '../database.js';
 import crypto from 'crypto';
+import { bodyRecord, nullableText, requiredText, requireChanges, uuid } from '../input-validation.js';
 
-import 'dotenv/config';
-const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:ZAanthony200399@localhost:5432/tienda_ropa?schema=public', ssl: process.env.DATABASE_URL?.includes('supabase') ? { rejectUnauthorized: false } : undefined
-});
+function categorySlug(value: unknown) {
+  const slug = requiredText(value, 'El enlace de la categoría', 160).toLowerCase();
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+    throw new BadRequestException('El enlace solo puede contener letras sin tildes, números y guiones.');
+  }
+  return slug;
+}
 
 @Injectable()
 export class CategoriesService {
@@ -18,44 +22,59 @@ export class CategoriesService {
   }
 
   async findOne(id: string) {
+    uuid(id);
     const { rows } = await pool.query(`
       SELECT * FROM "category" WHERE id = $1
     `, [id]);
     
-    if (rows.length === 0) throw new NotFoundException('Category not found');
+    if (rows.length === 0) throw new NotFoundException('La categoría no existe.');
     return rows[0];
   }
 
-  async create(data: any) {
-    const slug = data.slug || (data.name ? data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : '');
+  async create(input: unknown) {
+    const data = bodyRecord(input);
+    const name = requiredText(data.name, 'El nombre', 120);
     const id = crypto.randomUUID();
+    const generated = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const slug = data.slug === undefined ? generated || `categoria-${id.slice(0, 8)}` : categorySlug(data.slug);
+    const description = data.description === undefined ? null : nullableText(data.description, 'La descripción', 2000, true);
     
     const { rows } = await pool.query(`
       INSERT INTO "category" (id, name, slug, description, "createdAt", "updatedAt")
       VALUES ($1, $2, $3, $4, NOW(), NOW())
       RETURNING *
-    `, [id, data.name, slug, data.description || null]);
+    `, [id, name, slug, description]);
     
     return rows[0];
   }
 
-  async update(id: string, data: any) {
+  async update(id: string, input: unknown) {
+    uuid(id);
+    const data = bodyRecord(input);
+    requireChanges(data, ['name', 'slug', 'description']);
+    const name = data.name === undefined ? null : requiredText(data.name, 'El nombre', 120);
+    const slug = data.slug === undefined ? null : categorySlug(data.slug);
+    const description = data.description === undefined ? null : nullableText(data.description, 'La descripción', 2000, true);
     const { rows } = await pool.query(`
       UPDATE "category"
       SET name = COALESCE($1, name),
-          description = COALESCE($2, description),
+          description = CASE WHEN $4::boolean THEN $2 ELSE description END,
+          slug = COALESCE($5, slug),
           "updatedAt" = NOW()
       WHERE id = $3
       RETURNING *
-    `, [data.name, data.description, id]);
+    `, [name, description, id, data.description !== undefined, slug]);
     
+    if (!rows.length) throw new NotFoundException('La categoría no existe.');
     return rows[0];
   }
 
   async remove(id: string) {
+    uuid(id);
     const { rows } = await pool.query(`
       DELETE FROM "category" WHERE id = $1 RETURNING *
     `, [id]);
+    if (!rows.length) throw new NotFoundException('La categoría no existe.');
     return rows[0];
   }
 }

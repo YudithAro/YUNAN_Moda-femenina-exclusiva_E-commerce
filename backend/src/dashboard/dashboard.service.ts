@@ -1,18 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import pg from 'pg';
-
-import 'dotenv/config';
-const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:ZAanthony200399@localhost:5432/tienda_ropa?schema=public', ssl: process.env.DATABASE_URL?.includes('supabase') ? { rejectUnauthorized: false } : undefined
-});
+import { pool } from '../database.js';
 
 @Injectable()
 export class DashboardService {
   async getMetrics() {
     try {
-      // 1. Total de ingresos (Status != CANCELLED)
+      // Only confirmed payments count as revenue.
       const revenueResult = await pool.query(`
-        SELECT COALESCE(SUM(total), 0) as total_revenue FROM "order" WHERE status != 'CANCELLED'
+        SELECT COALESCE(SUM(total), 0) as total_revenue FROM "order" WHERE status IN ('PAID', 'SHIPPED', 'DELIVERED')
       `);
       
       // 2. Total de pedidos
@@ -36,7 +31,7 @@ export class DashboardService {
           to_char(DATE_TRUNC('month', "createdAt"), 'Mon') as name,
           SUM(total) as total
         FROM "order"
-        WHERE status != 'CANCELLED' AND "createdAt" >= NOW() - INTERVAL '6 months'
+        WHERE status IN ('PAID', 'SHIPPED', 'DELIVERED') AND "createdAt" >= NOW() - INTERVAL '6 months'
         GROUP BY DATE_TRUNC('month', "createdAt")
         ORDER BY DATE_TRUNC('month', "createdAt") ASC
       `);
@@ -66,6 +61,8 @@ export class DashboardService {
         SELECT p.name, SUM(oi.quantity) as total_sold
         FROM "orderItem" oi
         JOIN "product" p ON oi."productId" = p.id
+        JOIN "order" o ON oi."orderId" = o.id
+        WHERE o.status IN ('PAID', 'SHIPPED', 'DELIVERED')
         GROUP BY p.id, p.name
         ORDER BY total_sold DESC
         LIMIT 5

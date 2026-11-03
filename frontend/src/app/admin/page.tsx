@@ -1,10 +1,12 @@
 "use client";
+import { apiFetch } from "@/lib/api";
+import { ManualSaleDialog } from "@/components/admin/ManualSaleDialog";
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { 
-  Package, Tags, Users, FileText, ShoppingBag, Truck, Ticket, Building2, 
-  Settings, TrendingUp, AlertTriangle, ArrowRight, DollarSign, Plus, LayoutDashboard
+import {
+  Package, Tags, Users, FileText, ShoppingBag, Truck, Ticket, Building2,
+  Settings, TrendingUp, AlertTriangle, DollarSign, LayoutDashboard
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -13,9 +15,6 @@ import {
 } from 'recharts';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
 
 interface DashboardMetrics {
@@ -26,12 +25,12 @@ interface DashboardMetrics {
   monthlyRevenue: { name: string; total: number }[];
   ordersByStatus?: { name: string; value: number }[];
   topProducts?: { name: string; sold: number }[];
-  recentOrders: { 
-    id: string; 
-    total: string; 
-    status: string; 
-    createdAt: string; 
-    customer_name: string; 
+  recentOrders: {
+    id: string;
+    total: string;
+    status: string;
+    createdAt: string;
+    customer_name: string;
     customer_email: string;
   }[];
 }
@@ -41,29 +40,11 @@ const COLORS = ['#db2777', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
 export default function AdminDashboard() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
-  const [products, setProducts] = useState<any[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    customerName: "",
-    customerPhone: "",
-    productId: "",
-    quantity: "1"
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fetchProducts = async () => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/products`);
-      const data = await res.json();
-      setProducts(data);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-    }
-  };
 
   const fetchMetrics = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/dashboard/metrics`);
+      const res = await apiFetch(`/dashboard/metrics`);
       if (!res.ok) {
         throw new Error("Failed to fetch metrics");
       }
@@ -80,7 +61,7 @@ export default function AdminDashboard() {
           { name: "Jun", total: 0 }
         ];
       }
-      
+
       const statusMap: Record<string, string> = {
         PENDING: "PENDIENTE",
         PAID: "PAGADO",
@@ -90,10 +71,10 @@ export default function AdminDashboard() {
       };
 
       // Asegurar que existan datos por estado y top productos (sin mockear datos irreales)
-      const ordersByStatus = data.ordersByStatus && data.ordersByStatus.length > 0 
-        ? data.ordersByStatus.map((s: any) => ({ ...s, name: statusMap[s.name] || s.name }))
+      const ordersByStatus = data.ordersByStatus && data.ordersByStatus.length > 0
+        ? data.ordersByStatus.map((s: { name: string; value: number }) => ({ ...s, name: statusMap[s.name] || s.name }))
         : [];
-          
+
       const topProducts = data.topProducts && data.topProducts.length > 0
         ? data.topProducts
         : [];
@@ -106,53 +87,8 @@ export default function AdminDashboard() {
     }
   };
 
-  useEffect(() => {
-    fetchMetrics();
-    fetchProducts();
-  }, []);
+  useEffect(() => { void Promise.resolve().then(fetchMetrics); }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleRegisterSale = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.productId) return alert("Selecciona un producto");
-    
-    setIsSubmitting(true);
-    try {
-      const product = products.find(p => p.id === formData.productId);
-      if (!product) return;
-
-      const payload = {
-        customerName: formData.customerName,
-        customerPhone: formData.customerPhone,
-        items: [
-          {
-            productId: product.id,
-            quantity: parseInt(formData.quantity, 10),
-            price: parseFloat(product.price)
-          }
-        ]
-      };
-
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/orders/manual`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      
-      setIsModalOpen(false);
-      setFormData({ customerName: "", customerPhone: "", productId: "", quantity: "1" });
-      fetchMetrics();
-      fetchProducts();
-    } catch (error) {
-      console.error("Error registering sale:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const modules = [
     { name: "Productos", icon: Package, href: "/admin/products", color: "bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400" },
@@ -178,7 +114,7 @@ export default function AdminDashboard() {
             const Icon = module.icon;
             const darkBgClass = module.color.split(' ')[2]; // dark:bg-pink-900/30
             const darkTextClass = module.color.split(' ')[3]; // dark:text-pink-400
-            
+
             return (
               <motion.div key={module.name} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                 <Link href={module.href}>
@@ -201,49 +137,7 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogTrigger render={<Button className="gap-2 bg-green-600 hover:bg-green-700 text-white shadow-xl hover:shadow-green-900/50 hover:scale-105 transition-all py-6 px-6 text-sm font-bold uppercase tracking-widest rounded-xl"><Plus className="h-5 w-5" /> Registrar Venta WhatsApp</Button>} />
-          <DialogContent className="sm:max-w-[425px]">
-            <form onSubmit={handleRegisterSale}>
-              <DialogHeader>
-                <DialogTitle>Registrar Venta Manual</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Nombre del Cliente</label>
-                  <Input name="customerName" value={formData.customerName} onChange={handleInputChange} required />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Teléfono (WhatsApp)</label>
-                  <Input name="customerPhone" value={formData.customerPhone} onChange={handleInputChange} required />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Producto Vendido</label>
-                  <Select value={formData.productId} onValueChange={(val) => { if (val) setFormData(p => ({...p, productId: val}))}}>
-                    <SelectTrigger className="bg-transparent text-white border-white/20">
-                      <SelectValue placeholder="Seleccionar producto" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#0a0508] border-white/10 text-white max-h-[200px]">
-                      {products.map(p => (
-                        <SelectItem key={p.id} value={p.id} className="hover:bg-pink-900/30">{p.name} (S/ {p.price}) - Stock: {p.stock}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Cantidad</label>
-                  <Input name="quantity" type="number" min="1" value={formData.quantity} onChange={handleInputChange} required />
-                </div>
-              </div>
-              <DialogFooter>
-                <DialogClose render={<Button type="button" variant="outline">Cancelar</Button>} />
-                <Button type="submit" disabled={isSubmitting} className="bg-green-600 hover:bg-green-700 text-white">
-                  {isSubmitting ? "Guardando..." : "Guardar Venta"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <ManualSaleDialog onSaved={fetchMetrics} />
       </div>
 
       {loading ? (
@@ -267,9 +161,9 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="flex flex-col mt-2 z-10">
-                  <span className="text-4xl font-extrabold text-foreground">S/ {metrics.totalRevenue.toFixed(2)}</span>
+                  <span className="text-4xl font-extrabold text-foreground">S/ {Number(metrics.totalRevenue || 0).toFixed(2)}</span>
                   <span className="text-sm text-emerald-600 flex items-center gap-1 mt-2 font-semibold">
-                    <TrendingUp className="h-4 w-4" /> Actividad Estable
+                    <TrendingUp className="h-4 w-4" /> Ventas confirmadas
                   </span>
                 </div>
               </CardContent>
@@ -301,7 +195,7 @@ export default function AdminDashboard() {
                   <Users className="w-24 h-24" />
                 </div>
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Clientes Activos</span>
+                  <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Clientes registrados</span>
                   <div className="p-3 bg-pink-100 text-pink-600 rounded-xl dark:bg-pink-500/20 dark:text-pink-400 shadow-inner">
                     <Users className="h-5 w-5" />
                   </div>
@@ -309,7 +203,7 @@ export default function AdminDashboard() {
                 <div className="flex flex-col mt-2 z-10">
                   <span className="text-4xl font-extrabold text-foreground">{metrics.totalUsers}</span>
                   <span className="text-sm text-pink-600 flex items-center gap-1 mt-2 font-semibold">
-                    <TrendingUp className="h-4 w-4" /> En crecimiento
+                    <TrendingUp className="h-4 w-4" /> Cuentas registradas
                   </span>
                 </div>
               </CardContent>
@@ -338,7 +232,7 @@ export default function AdminDashboard() {
 
           {/* Gráficos Principales */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-2">
-            
+
             {/* Gráfico de Ingresos */}
             <Card className="lg:col-span-2 shadow-lg border-border">
               <CardHeader className="pb-2">
@@ -358,7 +252,7 @@ export default function AdminDashboard() {
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.2} />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} dy={10} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
-                      <Tooltip 
+                      <Tooltip
                         contentStyle={{ borderRadius: '8px', border: '1px solid #333', backgroundColor: '#000', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.5)' }}
                         itemStyle={{ color: '#db2777', fontWeight: 'bold' }}
                       />
@@ -392,7 +286,7 @@ export default function AdminDashboard() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip 
+                      <Tooltip
                         contentStyle={{ borderRadius: '8px', border: '1px solid #333', backgroundColor: '#000' }}
                         itemStyle={{ color: '#fff', fontWeight: 'bold' }}
                       />
@@ -405,7 +299,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-2 pb-12">
-            
+
             {/* Top Productos (BarChart) */}
             <Card className="shadow-lg border-border">
               <CardHeader className="pb-2">
@@ -423,7 +317,7 @@ export default function AdminDashboard() {
                       <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} opacity={0.2} />
                       <XAxis type="number" hide />
                       <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={150} tick={{ fill: '#9ca3af', fontSize: 12 }} />
-                      <Tooltip 
+                      <Tooltip
                         cursor={{fill: '#1f2937', opacity: 0.4}}
                         contentStyle={{ borderRadius: '8px', border: '1px solid #333', backgroundColor: '#000' }}
                       />
@@ -458,11 +352,11 @@ export default function AdminDashboard() {
                 ) : (
                   <div className="space-y-4 mt-4">
                     {metrics.recentOrders.map((order, index) => (
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
-                        key={order.id} 
+                        key={order.id}
                         className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-card/40 hover:bg-muted/50 transition-colors shadow-sm"
                       >
                         <div className="flex items-center gap-4 overflow-hidden">
@@ -488,7 +382,7 @@ export default function AdminDashboard() {
             </Card>
           </div>
         </>
-      ) : null}
+      ) : <div className="p-8 text-center"><p>No se pudieron cargar las estadísticas.</p><Button onClick={() => void fetchMetrics()}>Reintentar</Button></div>}
     </div>
   );
 }

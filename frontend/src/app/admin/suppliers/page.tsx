@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api";
 
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,7 +24,6 @@ import {
 } from "@/components/ui/dialog";
 import { ArrowLeft, Plus, Trash2, Building2, Phone, Mail, User } from "lucide-react";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 
 interface Supplier {
   id: string;
@@ -37,7 +37,7 @@ interface Supplier {
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [formData, setFormData] = useState({
     name: "",
     contactName: "",
@@ -45,10 +45,11 @@ export default function SuppliersPage() {
     phone: "",
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const fetchSuppliers = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/suppliers`);
+      const res = await apiFetch(`/suppliers`);
       const data = await res.json();
       setSuppliers(data);
     } catch (error) {
@@ -58,9 +59,7 @@ export default function SuppliersPage() {
     }
   };
 
-  useEffect(() => {
-    fetchSuppliers();
-  }, []);
+  useEffect(() => { void Promise.resolve().then(fetchSuppliers); }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -69,8 +68,10 @@ export default function SuppliersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
+    setIsSaving(true);
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/suppliers`, {
+      await apiFetch(`/suppliers`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -88,12 +89,12 @@ export default function SuppliersPage() {
       fetchSuppliers();
     } catch (error) {
       console.error("Error creating supplier:", error);
-    }
+    } finally { setIsSaving(false); }
   };
 
   const toggleStatus = async (id: string, currentStatus: boolean) => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/suppliers/${id}`, {
+      await apiFetch(`/suppliers/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -109,7 +110,7 @@ export default function SuppliersPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("¿Seguro que quieres eliminar este proveedor?")) return;
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/suppliers/${id}`, {
+      await apiFetch(`/suppliers/${id}`, {
         method: "DELETE",
       });
       fetchSuppliers();
@@ -134,8 +135,8 @@ export default function SuppliersPage() {
             </p>
           </div>
         </div>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+
+        <Dialog open={isDialogOpen} onOpenChange={open => { if (!isSaving) setIsDialogOpen(open); }}>
           <DialogTrigger render={<Button className="gap-2 bg-pink-600 hover:bg-pink-700 text-white"><Plus className="h-4 w-4" /> Añadir Proveedor</Button>} />
           <DialogContent className="sm:max-w-[425px]">
             <form onSubmit={handleSubmit}>
@@ -147,14 +148,14 @@ export default function SuppliersPage() {
                   <label htmlFor="name" className="text-sm font-medium">Empresa / Marca</label>
                   <div className="relative">
                     <Building2 className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input id="name" name="name" className="pl-9" placeholder="EJ: Distribuidora Textil SAC" value={formData.name} onChange={handleInputChange} required />
+                    <Input id="name" name="name" maxLength={150} className="pl-9" placeholder="EJ: Distribuidora Textil SAC" value={formData.name} onChange={handleInputChange} required />
                   </div>
                 </div>
                 <div className="grid gap-2">
                   <label htmlFor="contactName" className="text-sm font-medium">Nombre de Contacto</label>
                   <div className="relative">
                     <User className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input id="contactName" name="contactName" className="pl-9" placeholder="EJ: Juan Pérez" value={formData.contactName} onChange={handleInputChange} />
+                    <Input id="contactName" name="contactName" maxLength={120} className="pl-9" placeholder="EJ: Juan Pérez" value={formData.contactName} onChange={handleInputChange} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -162,21 +163,21 @@ export default function SuppliersPage() {
                     <label htmlFor="phone" className="text-sm font-medium">Teléfono</label>
                     <div className="relative">
                       <Phone className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input id="phone" name="phone" className="pl-9" value={formData.phone} onChange={handleInputChange} />
+                      <Input id="phone" name="phone" type="tel" maxLength={30} className="pl-9" value={formData.phone} onChange={handleInputChange} />
                     </div>
                   </div>
                   <div className="grid gap-2">
                     <label htmlFor="email" className="text-sm font-medium">Correo Electrónico</label>
                     <div className="relative">
                       <Mail className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input id="email" name="email" type="email" className="pl-9" value={formData.email} onChange={handleInputChange} />
+                      <Input id="email" name="email" maxLength={254} type="email" className="pl-9" value={formData.email} onChange={handleInputChange} />
                     </div>
                   </div>
                 </div>
               </div>
               <DialogFooter>
                 <DialogClose render={<Button type="button" variant="outline">Cancelar</Button>} />
-                <Button type="submit" className="bg-pink-600 hover:bg-pink-700 text-white">Guardar Proveedor</Button>
+                <Button type="submit" disabled={isSaving} className="bg-pink-600 hover:bg-pink-700 text-white">Guardar Proveedor</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -238,8 +239,8 @@ export default function SuppliersPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         className={`h-7 px-3 text-xs rounded-full ${supplier.active ? 'text-blue-600 border-blue-200 bg-blue-50 dark:bg-blue-500/10' : 'text-slate-500 border-slate-200 bg-slate-50 dark:bg-slate-500/10'}`}
                         onClick={() => toggleStatus(supplier.id, supplier.active)}

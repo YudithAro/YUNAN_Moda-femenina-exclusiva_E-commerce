@@ -1,9 +1,9 @@
-import { Controller, Get, Put, Param, Body } from '@nestjs/common';
+import { Inject, Controller, ForbiddenException, Get, Put } from '@nestjs/common';
 import { UsersService } from './users.service.js';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(@Inject(UsersService) private readonly usersService: UsersService) {}
 
   @Get()
   findAll() {
@@ -11,7 +11,7 @@ export class UsersController {
   }
 
   @Put(':id/role')
-  updateRole(@Param('id') id: string, @Body('role') role: string) {
-    throw new Error('Cambio de roles deshabilitado por seguridad.');
+  updateRole() {
+    throw new ForbiddenException('Los roles se administran desde la base de datos.');
   }
 }

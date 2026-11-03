@@ -1,9 +1,10 @@
 "use client";
+import { apiFetch, getErrorMessage } from "@/lib/api";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Package, Truck, CheckCircle2, MapPin } from "lucide-react";
+import { type LucideIcon, ArrowLeft, Package, Truck, CheckCircle2, MapPin } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 
@@ -12,6 +13,8 @@ interface Order {
   total: string | number;
   status: string;
   createdAt: string;
+  customerName?: string;
+  customerPhone?: string;
   user: {
     id: string;
     name: string;
@@ -22,44 +25,51 @@ interface Order {
 export default function ShippingPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState("");
+  const [loadError, setLoadError] = useState("");
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/orders`);
+      const res = await apiFetch(`/orders`);
       const data = await res.json();
       setOrders(data);
+      setLoadError("");
     } catch (error) {
+      setLoadError(getErrorMessage(error));
       console.error("Error fetching orders:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  useEffect(() => { void Promise.resolve().then(fetchOrders); }, []);
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
+    if (updatingId) return;
+    setUpdatingId(id);
+    setNotice("");
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/orders/${id}/status`, {
+      await apiFetch(`/orders/${id}/status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ status: newStatus }),
       });
-      fetchOrders();
+      setNotice("Estado del pedido actualizado.");
+      await fetchOrders();
     } catch (error) {
       console.error("Error updating status:", error);
-    }
+    } finally { setUpdatingId(null); }
   };
 
   // Filtrar pedidos por estado para el tablero Kanban
   const preparing = orders.filter(o => o.status === "PENDING" || o.status === "PAID");
   const shipping = orders.filter(o => o.status === "SHIPPED");
-  const delivered = orders.filter(o => o.status === "COMPLETED");
+  const delivered = orders.filter(o => o.status === "DELIVERED");
 
-  const OrderCard = ({ order, nextStatus, nextLabel, icon: Icon, color }: { order: Order, nextStatus?: string, nextLabel?: string, icon: any, color: string }) => (
+  const OrderCard = ({ order, nextStatus, nextLabel, icon: Icon, color }: { order: Order, nextStatus?: string, nextLabel?: string, icon: LucideIcon, color: string }) => (
     <Card className="mb-4 bg-card border border-border shadow-sm hover:shadow-md transition-shadow">
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-3">
@@ -70,19 +80,19 @@ export default function ShippingPage() {
             {new Date(order.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
           </Badge>
         </div>
-        
-        <h4 className="font-medium text-sm mb-1">{order.user?.name || "Cliente Invitado"}</h4>
-        
+
+        <h4 className="font-medium text-sm mb-1">{order.customerName || order.user?.name || "Cliente invitado"}</h4>
+
         <div className="flex items-center text-xs text-muted-foreground mb-4">
           <MapPin className="h-3 w-3 mr-1" />
           <span>Dirección pendiente de registro</span>
         </div>
-        
+
         <div className="flex items-center justify-between border-t border-border pt-3 mt-3">
           <span className="font-bold text-sm">S/ {Number(order.total).toFixed(2)}</span>
           {nextStatus && (
-            <Button 
-              size="sm" 
+            <Button
+              size="sm" disabled={!!updatingId}
               variant="outline"
               className="h-7 text-xs flex items-center gap-1 hover:bg-pink-50 hover:text-pink-600 hover:border-pink-200"
               onClick={() => handleUpdateStatus(order.id, nextStatus)}
@@ -98,6 +108,7 @@ export default function ShippingPage() {
 
   return (
     <div className="space-y-8">
+      {notice && <p role="status" className="text-emerald-600 dark:text-emerald-300">{notice}</p>}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <Link href="/admin">
@@ -116,9 +127,11 @@ export default function ShippingPage() {
 
       {loading ? (
         <div className="text-center py-20 text-muted-foreground">Cargando tablero logístico...</div>
+      ) : loadError ? (
+        <div role="alert" className="space-y-3 py-10 text-center"><p>{loadError}</p><Button variant="outline" onClick={() => void fetchOrders()}>Reintentar</Button></div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-          
+
           {/* Columna 1: Por Preparar */}
           <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-border">
             <div className="flex items-center justify-between mb-4">
@@ -130,15 +143,15 @@ export default function ShippingPage() {
               </div>
               <Badge variant="secondary" className="rounded-full bg-amber-100 text-amber-700 hover:bg-amber-100">{preparing.length}</Badge>
             </div>
-            
+
             <div className="space-y-4">
               {preparing.length === 0 && <p className="text-xs text-center text-muted-foreground py-8 border-2 border-dashed border-border rounded-lg">No hay pedidos pendientes.</p>}
               {preparing.map(order => (
-                <OrderCard 
-                  key={order.id} 
-                  order={order} 
-                  nextStatus="SHIPPED" 
-                  nextLabel="Despachar" 
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  nextStatus={order.status === "PENDING" ? "PAID" : "SHIPPED"}
+                  nextLabel={order.status === "PENDING" ? "Confirmar pago" : "Despachar"}
                   icon={Truck}
                   color="text-amber-600 border-amber-200"
                 />
@@ -157,15 +170,15 @@ export default function ShippingPage() {
               </div>
               <Badge variant="secondary" className="rounded-full bg-blue-100 text-blue-700 hover:bg-blue-100">{shipping.length}</Badge>
             </div>
-            
+
             <div className="space-y-4">
               {shipping.length === 0 && <p className="text-xs text-center text-muted-foreground py-8 border-2 border-dashed border-border rounded-lg">No hay envíos en curso.</p>}
               {shipping.map(order => (
-                <OrderCard 
-                  key={order.id} 
-                  order={order} 
-                  nextStatus="COMPLETED" 
-                  nextLabel="Entregado" 
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  nextStatus="DELIVERED"
+                  nextLabel="Entregado"
                   icon={CheckCircle2}
                   color="text-blue-600 border-blue-200"
                 />
@@ -184,13 +197,13 @@ export default function ShippingPage() {
               </div>
               <Badge variant="secondary" className="rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-100">{delivered.length}</Badge>
             </div>
-            
+
             <div className="space-y-4">
               {delivered.length === 0 && <p className="text-xs text-center text-muted-foreground py-8 border-2 border-dashed border-border rounded-lg">No hay entregas recientes.</p>}
               {delivered.map(order => (
-                <OrderCard 
-                  key={order.id} 
-                  order={order} 
+                <OrderCard
+                  key={order.id}
+                  order={order}
                   icon={CheckCircle2}
                   color="text-emerald-600 border-emerald-200"
                 />

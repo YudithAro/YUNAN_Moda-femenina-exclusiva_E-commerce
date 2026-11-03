@@ -5,20 +5,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
+import { apiJson, getErrorMessage } from "@/lib/api";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   const [activeBadgeIndex, setActiveBadgeIndex] = useState(0);
   const badges = ["+ VESTIDOS", "+ BLUSAS", "+ ACCESORIOS", "+ ZAPATOS"];
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setActiveBadgeIndex((prev) => (prev + 1) % badges.length);
+      setActiveBadgeIndex((prev) => (prev + 1) % 4);
     }, 2500);
     return () => clearInterval(interval);
   }, []);
@@ -27,7 +32,7 @@ export default function RegisterPage() {
     e.preventDefault();
     setIsLoading(true);
     setErrorMsg("");
-    
+
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
     const email = formData.get("email") as string;
@@ -46,22 +51,16 @@ export default function RegisterPage() {
         throw error;
       }
 
-      // Sync user with backend
-      if (data?.user) {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/auth/sync-user`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: data.user.id, email, name }),
-        });
-
-        if (data.session) {
-          localStorage.setItem("token", data.session.access_token);
-        }
-        window.location.href = '/'; 
+      if (data.session) {
+        await apiJson("/auth/sync-user", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
+        router.replace("/");
+      } else {
+        setSuccessMsg("Cuenta creada. Revisa tu correo y confirma tu cuenta antes de iniciar sesión.");
+        setIsLoading(false);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      setErrorMsg(error.message);
+      setErrorMsg(getErrorMessage(error));
       setIsLoading(false);
     }
   };
@@ -77,12 +76,12 @@ export default function RegisterPage() {
         {/* Columna Izquierda (Visual) */}
         <div className="hidden md:flex md:w-1/2 p-12 flex-col items-center justify-center relative bg-gradient-to-b from-[#111111] to-[#1a0f14] border-r border-white/5">
           <div className="mb-12">
-            <img src="/logo-yunan2.png" alt="YUNAN" className="h-48 w-auto object-contain rounded-full shadow-[0_0_40px_rgba(219,39,119,0.4)]" />
+            <Image width={192} height={192} src="/logo-yunan2.png" alt="YUNAN" className="h-48 w-auto object-contain rounded-full shadow-[0_0_40px_rgba(219,39,119,0.4)]" />
           </div>
-          
+
           <div className="text-center space-y-4 mb-12">
             <h2 className="text-4xl font-serif text-pink-500 italic tracking-wide">
-              "Brilla Bonito"
+              &ldquo;Brilla Bonito&rdquo;
             </h2>
             <p className="text-zinc-400 text-sm max-w-xs mx-auto leading-relaxed">
               Únete a nuestra comunidad exclusiva y accede a las últimas tendencias en moda premium.
@@ -103,12 +102,12 @@ export default function RegisterPage() {
               </motion.span>
             </AnimatePresence>
           </div>
-          
+
           {/* Decorative dots */}
           <div className="flex gap-2 mt-6">
             {badges.map((_, i) => (
-              <div 
-                key={i} 
+              <div
+                key={i}
                 className={`h-1.5 rounded-full transition-all duration-300 ${i === activeBadgeIndex ? 'bg-pink-500 w-5 shadow-[0_0_10px_rgba(219,39,119,0.5)]' : 'bg-zinc-700 w-1.5'}`}
               ></div>
             ))}
@@ -123,6 +122,7 @@ export default function RegisterPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {successMsg && <div role="status" className="rounded-lg border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-300">{successMsg} <Link href="/auth/login" className="underline">Iniciar sesión</Link></div>}
             {errorMsg && (
               <div className="bg-red-500/10 text-red-400 p-4 rounded-lg text-sm border border-red-500/20 text-center">
                 {errorMsg}
@@ -135,13 +135,13 @@ export default function RegisterPage() {
               </label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-500" />
-                <Input 
-                  id="name" 
-                  name="name"
-                  type="text" 
-                  placeholder="Ej: Valeria Torres" 
-                  required 
-                  className="pl-12 h-14 bg-[#1a1a1a] text-white border-white/10 focus-visible:ring-2 focus-visible:ring-pink-500 rounded-xl font-medium placeholder:text-zinc-500" 
+                <Input
+                  id="name"
+                  name="name" autoComplete="name"
+                  type="text"
+                  placeholder="Ej: Valeria Torres"
+                  required
+                  className="pl-12 h-14 bg-[#1a1a1a] text-white border-white/10 focus-visible:ring-2 focus-visible:ring-pink-500 rounded-xl font-medium placeholder:text-zinc-500"
                 />
               </div>
             </div>
@@ -152,13 +152,13 @@ export default function RegisterPage() {
               </label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-500" />
-                <Input 
-                  id="email" 
-                  name="email"
-                  type="email" 
-                  placeholder="hola@ejemplo.com" 
-                  required 
-                  className="pl-12 h-14 bg-[#1a1a1a] text-white border-white/10 focus-visible:ring-2 focus-visible:ring-pink-500 rounded-xl font-medium placeholder:text-zinc-500" 
+                <Input
+                  id="email"
+                  name="email" autoComplete="email"
+                  type="email"
+                  placeholder="hola@ejemplo.com"
+                  required
+                  className="pl-12 h-14 bg-[#1a1a1a] text-white border-white/10 focus-visible:ring-2 focus-visible:ring-pink-500 rounded-xl font-medium placeholder:text-zinc-500"
                 />
               </div>
             </div>
@@ -169,12 +169,12 @@ export default function RegisterPage() {
               </label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-500" />
-                <Input 
+                <Input
                   id="password"
-                  name="password" 
-                  type={showPassword ? "text" : "password"} 
-                  placeholder="Crea una contraseña segura" 
-                  required 
+                  name="password" minLength={8} autoComplete="new-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Crea una contraseña segura"
+                  required
                   className="pl-12 pr-12 h-14 bg-[#1a1a1a] text-white border-white/10 focus-visible:ring-2 focus-visible:ring-pink-500 rounded-xl font-medium placeholder:text-zinc-500"
                 />
                 <button
@@ -187,8 +187,8 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isLoading}
               className="w-full h-14 mt-2 bg-gradient-to-r from-pink-600 to-pink-500 hover:from-pink-500 hover:to-pink-400 text-white font-bold tracking-wider rounded-xl transition-all shadow-[0_0_20px_rgba(219,39,119,0.3)] hover:shadow-[0_0_30px_rgba(219,39,119,0.5)] group"
             >

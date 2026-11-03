@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
+import { Inject, Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
 import { SuppliersService } from './suppliers.service.js';
 
 @Controller('suppliers')
 export class SuppliersController {
-  constructor(private readonly suppliersService: SuppliersService) {}
+  constructor(@Inject(SuppliersService) private readonly suppliersService: SuppliersService) {}
 
   @Post()
   create(@Body() createSupplierDto: any) {

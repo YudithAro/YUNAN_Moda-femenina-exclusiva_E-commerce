@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api";
 
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,7 +32,7 @@ export default function CustomersPage() {
 
   const fetchCustomers = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/users`);
+      const res = await apiFetch(`/users`);
       const data = await res.json();
       // Filter out admins if you only want to see standard customers, or keep everyone.
       // Let's keep everyone but highlight roles.
@@ -43,9 +44,7 @@ export default function CustomersPage() {
     }
   };
 
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
+  useEffect(() => { void Promise.resolve().then(fetchCustomers); }, []);
 
   return (
     <div className="space-y-8">

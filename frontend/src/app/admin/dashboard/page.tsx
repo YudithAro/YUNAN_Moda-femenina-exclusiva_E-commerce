@@ -1,31 +1,23 @@
 "use client";
+import { apiFetch } from "@/lib/api";
+import { ManualSaleDialog } from "@/components/admin/ManualSaleDialog";
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Users, ShoppingBag, Truck, ArrowLeft, Plus } from "lucide-react";
+import { DollarSign, Users, ShoppingBag, Truck, ArrowLeft } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+type Metrics = { totalRevenue: number; totalUsers: number; totalOrders: number; lowStockItems: number; monthlyRevenue: { name: string; total: number }[]; recentOrders: { id: string; customer_name: string; customer_email: string; total: string | number }[] };
 
 export default function DashboardStats() {
-  const [metrics, setMetrics] = useState<any>(null);
+  const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [loading, setLoading] = useState(true);
-  const [products, setProducts] = useState<any[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    customerName: "",
-    customerPhone: "",
-    productId: "",
-    quantity: "1"
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchMetrics = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/dashboard/metrics`);
+      const res = await apiFetch(`/dashboard/metrics`);
       const data = await res.json();
       setMetrics(data);
     } catch (error) {
@@ -35,67 +27,15 @@ export default function DashboardStats() {
     }
   };
 
-  const fetchProducts = async () => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/products`);
-      const data = await res.json();
-      setProducts(data);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-    }
-  };
 
-  useEffect(() => {
-    fetchMetrics();
-    fetchProducts();
-  }, []);
+  useEffect(() => { void Promise.resolve().then(fetchMetrics); }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
 
-  const handleRegisterSale = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.productId) return alert("Selecciona un producto");
-    
-    setIsSubmitting(true);
-    try {
-      const product = products.find(p => p.id === formData.productId);
-      if (!product) return;
-
-      const payload = {
-        customerName: formData.customerName,
-        customerPhone: formData.customerPhone,
-        items: [
-          {
-            productId: product.id,
-            quantity: parseInt(formData.quantity, 10),
-            price: parseFloat(product.price)
-          }
-        ]
-      };
-
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/orders/manual`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      
-      setIsModalOpen(false);
-      setFormData({ customerName: "", customerPhone: "", productId: "", quantity: "1" });
-      fetchMetrics();
-      fetchProducts();
-    } catch (error) {
-      console.error("Error registering sale:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (loading || !metrics) {
+  if (loading) {
     return <div className="p-8 text-center text-pink-500">Cargando estadísticas...</div>;
   }
+
+  if (!metrics) return <div className="p-8 text-center space-y-4"><p>No se pudieron cargar las estadísticas.</p><Button onClick={() => void fetchMetrics()}>Reintentar</Button></div>;
 
   const chartData = metrics.monthlyRevenue?.length > 0 ? metrics.monthlyRevenue : [
     { name: "Mes", total: 0 }
@@ -118,49 +58,7 @@ export default function DashboardStats() {
           </div>
         </div>
 
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogTrigger render={<Button className="gap-2 bg-green-600 hover:bg-green-700 text-white"><Plus className="h-4 w-4" /> Registrar Venta WhatsApp</Button>} />
-          <DialogContent className="sm:max-w-[425px]">
-            <form onSubmit={handleRegisterSale}>
-              <DialogHeader>
-                <DialogTitle>Registrar Venta Manual</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Nombre del Cliente</label>
-                  <Input name="customerName" value={formData.customerName} onChange={handleInputChange} required />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Teléfono (WhatsApp)</label>
-                  <Input name="customerPhone" value={formData.customerPhone} onChange={handleInputChange} required />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Producto Vendido</label>
-                  <Select value={formData.productId} onValueChange={(val) => { if (val) setFormData(p => ({...p, productId: val}))}}>
-                    <SelectTrigger className="bg-transparent text-white border-white/20">
-                      <SelectValue placeholder="Seleccionar producto" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#0a0508] border-white/10 text-white">
-                      {products.map(p => (
-                        <SelectItem key={p.id} value={p.id} className="hover:bg-pink-900/30">{p.name} (S/ {p.price}) - Stock: {p.stock}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Cantidad</label>
-                  <Input name="quantity" type="number" min="1" value={formData.quantity} onChange={handleInputChange} required />
-                </div>
-              </div>
-              <DialogFooter>
-                <DialogClose render={<Button type="button" variant="outline">Cancelar</Button>} />
-                <Button type="submit" disabled={isSubmitting} className="bg-green-600 hover:bg-green-700 text-white">
-                  {isSubmitting ? "Guardando..." : "Guardar Venta"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <ManualSaleDialog onSaved={fetchMetrics} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -170,7 +68,7 @@ export default function DashboardStats() {
             <DollarSign className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">S/ {metrics.totalRevenue?.toFixed(2) || '0.00'}</div>
+            <div className="text-2xl font-bold">S/ {Number(metrics.totalRevenue || 0).toFixed(2) || '0.00'}</div>
           </CardContent>
         </Card>
         <Card>
@@ -220,7 +118,7 @@ export default function DashboardStats() {
                   </defs>
                   <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `S/${value}`} />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
                     itemStyle={{ color: 'hsl(var(--foreground))' }}
                   />
@@ -239,7 +137,7 @@ export default function DashboardStats() {
               {metrics.recentOrders?.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center">No hay ventas registradas aún.</p>
               ) : (
-                metrics.recentOrders?.map((order: any) => (
+                metrics.recentOrders?.map((order) => (
                   <div key={order.id} className="flex items-center">
                     <div className="h-9 w-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
                       {order.customer_name ? order.customer_name.substring(0, 2).toUpperCase() : 'W'}

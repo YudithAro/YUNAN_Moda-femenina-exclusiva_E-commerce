@@ -1,8 +1,12 @@
 import pg from 'pg';
 import 'dotenv/config';
 
+if (!process.env.SOURCE_DATABASE_URL || !process.env.DATABASE_URL || process.env.SOURCE_DATABASE_URL === process.env.DATABASE_URL) {
+  throw new Error('Configura SOURCE_DATABASE_URL y DATABASE_URL con bases distintas antes de migrar datos.');
+}
+
 const localPool = new pg.Pool({
-  connectionString: 'postgresql://postgres:ZAanthony200399@localhost:5432/tienda_ropa?schema=public'
+  connectionString: process.env.SOURCE_DATABASE_URL
 });
 
 const supabasePool = new pg.Pool({

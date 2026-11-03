@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api";
 
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,7 +31,6 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, Plus, Trash2, Ticket, Percent, DollarSign } from "lucide-react";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 
 interface Coupon {
   id: string;
@@ -44,17 +44,18 @@ interface Coupon {
 export default function CouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [formData, setFormData] = useState({
     code: "",
     discount: "",
     type: "PERCENTAGE",
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const fetchCoupons = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/coupons`);
+      const res = await apiFetch(`/coupons`);
       const data = await res.json();
       setCoupons(data);
     } catch (error) {
@@ -64,9 +65,7 @@ export default function CouponsPage() {
     }
   };
 
-  useEffect(() => {
-    fetchCoupons();
-  }, []);
+  useEffect(() => { void Promise.resolve().then(fetchCoupons); }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -79,8 +78,10 @@ export default function CouponsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
+    setIsSaving(true);
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/coupons`, {
+      await apiFetch(`/coupons`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -97,12 +98,12 @@ export default function CouponsPage() {
       fetchCoupons();
     } catch (error) {
       console.error("Error creating coupon:", error);
-    }
+    } finally { setIsSaving(false); }
   };
 
   const toggleStatus = async (id: string, currentStatus: boolean) => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/coupons/${id}`, {
+      await apiFetch(`/coupons/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -118,7 +119,7 @@ export default function CouponsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("¿Seguro que quieres eliminar este cupón?")) return;
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/coupons/${id}`, {
+      await apiFetch(`/coupons/${id}`, {
         method: "DELETE",
       });
       fetchCoupons();
@@ -143,8 +144,8 @@ export default function CouponsPage() {
             </p>
           </div>
         </div>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+
+        <Dialog open={isDialogOpen} onOpenChange={open => { if (!isSaving) setIsDialogOpen(open); }}>
           <DialogTrigger render={<Button className="gap-2 bg-pink-600 hover:bg-pink-700 text-white"><Plus className="h-4 w-4" /> Crear Cupón</Button>} />
           <DialogContent className="sm:max-w-[425px]">
             <form onSubmit={handleSubmit}>
@@ -156,22 +157,22 @@ export default function CouponsPage() {
                   <label htmlFor="code" className="text-sm font-medium">Código del Cupón</label>
                   <div className="relative">
                     <Ticket className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      id="code" 
-                      name="code" 
-                      placeholder="EJ: VERANO2026" 
-                      className="pl-9 font-mono" 
-                      value={formData.code} 
-                      onChange={handleInputChange} 
-                      required 
+                    <Input
+                      id="code"
+                      name="code" maxLength={64} pattern="[A-Za-z0-9_-]+"
+                      placeholder="EJ: VERANO2026"
+                      className="pl-9 font-mono"
+                      value={formData.code}
+                      onChange={handleInputChange}
+                      required
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <label className="text-sm font-medium">Tipo de Descuento</label>
-                    <Select value={formData.type} onValueChange={(val) => { if (val) handleTypeChange(val); }}>
-                      <SelectTrigger>
+                    <label htmlFor="coupon-type" className="text-sm font-medium">Tipo de Descuento</label>
+                    <Select items={{ PERCENTAGE: "Porcentaje (%)", FIXED: "Monto Fijo (S/)" }} value={formData.type} onValueChange={(val) => { if (val) handleTypeChange(val); }}>
+                      <SelectTrigger id="coupon-type">
                         <SelectValue placeholder="Selecciona" />
                       </SelectTrigger>
                       <SelectContent>
@@ -188,17 +189,17 @@ export default function CouponsPage() {
                       ) : (
                         <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                       )}
-                      <Input 
-                        id="discount" 
-                        name="discount" 
-                        type="number" 
-                        step="0.01" 
-                        min="0"
-                        max={formData.type === "PERCENTAGE" ? "100" : undefined}
-                        className="pl-9" 
-                        value={formData.discount} 
-                        onChange={(e) => setFormData(p => ({ ...p, discount: e.target.value }))} 
-                        required 
+                      <Input
+                        id="discount"
+                        name="discount"
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        max={formData.type === "PERCENTAGE" ? "100" : "99999999.99"}
+                        className="pl-9"
+                        value={formData.discount}
+                        onChange={(e) => setFormData(p => ({ ...p, discount: e.target.value }))}
+                        required
                       />
                     </div>
                   </div>
@@ -206,7 +207,7 @@ export default function CouponsPage() {
               </div>
               <DialogFooter>
                 <DialogClose render={<Button type="button" variant="outline">Cancelar</Button>} />
-                <Button type="submit" className="bg-pink-600 hover:bg-pink-700 text-white">Generar Cupón</Button>
+                <Button type="submit" disabled={isSaving} className="bg-pink-600 hover:bg-pink-700 text-white">Generar Cupón</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -260,8 +261,8 @@ export default function CouponsPage() {
                       })}
                     </TableCell>
                     <TableCell>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         className={`h-7 px-3 text-xs rounded-full ${coupon.active ? 'text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-500/10' : 'text-slate-500 border-slate-200 bg-slate-50 dark:bg-slate-500/10'}`}
                         onClick={() => toggleStatus(coupon.id, coupon.active)}

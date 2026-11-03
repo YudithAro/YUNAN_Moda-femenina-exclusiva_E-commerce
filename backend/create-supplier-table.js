@@ -1,6 +1,8 @@
 import pg from 'pg';
+import 'dotenv/config';
+if (!process.env.DATABASE_URL) throw new Error('Configura DATABASE_URL.');
 const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:ZAanthony200399@localhost:5432/tienda_ropa?schema=public'
+  connectionString: process.env.DATABASE_URL
 });
 
 async function run() {

@@ -1,70 +1,34 @@
-import { Injectable } from '@nestjs/common';
-import pg from 'pg';
-import crypto from 'crypto';
-
-import 'dotenv/config';
-const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:ZAanthony200399@localhost:5432/tienda_ropa?schema=public', ssl: process.env.DATABASE_URL?.includes('supabase') ? { rejectUnauthorized: false } : undefined
-});
+import { ConflictException, Injectable } from '@nestjs/common';
+import { pool } from '../database.js';
+import type { AuthUser } from '../auth/auth.types.js';
 
 @Injectable()
 export class UsersService {
   async findAll() {
     const { rows } = await pool.query(`
-      SELECT id, name, email, role, "createdAt" FROM "user"
-      ORDER BY "createdAt" DESC
+      SELECT u.id, u.name, u.email, u.role, u."createdAt",
+        COUNT(o.id)::int AS "orderCount",
+        COALESCE(SUM(o.total) FILTER (WHERE o.status IN ('PAID', 'SHIPPED', 'DELIVERED')), 0) AS "totalSpent"
+      FROM "user" u LEFT JOIN "order" o ON o."userId" = u.id
+      GROUP BY u.id ORDER BY u."createdAt" DESC
     `);
-    
-    // Attach order counts to each user for the dashboard
-    for (const user of rows) {
-      const ordersRes = await pool.query(`
-        SELECT COUNT(*) as count FROM "order" WHERE "userId" = $1
-      `, [user.id]);
-      user.orderCount = parseInt(ordersRes.rows[0].count, 10);
-      
-      const totalRes = await pool.query(`
-        SELECT SUM(total) as total FROM "order" WHERE "userId" = $1 AND status != 'CANCELLED'
-      `, [user.id]);
-      user.totalSpent = parseFloat(totalRes.rows[0].total) || 0;
-    }
-    
-    return rows;
+    return rows.map(row => ({ ...row, totalSpent: Number(row.totalSpent) }));
   }
 
-  async findByEmail(email: string): Promise<any> {
-    const { rows } = await pool.query('SELECT * FROM "user" WHERE email = $1', [email]);
-    return rows[0] || null;
-  }
-
-  async create(data: any): Promise<any> {
-    const id = data.id || crypto.randomUUID();
-
-    const { rows } = await pool.query(`
-      INSERT INTO "user" (id, name, email, role, "createdAt", "updatedAt")
-      VALUES ($1, $2, $3, $4, NOW(), NOW())
-      RETURNING *
-    `, [id, data.name, data.email, data.role || 'USER']);
-    
-    return rows[0];
-  }
-
-  async updateRole(id: string, role: string) {
-    const { rows } = await pool.query(`
-      UPDATE "user"
-      SET role = $1, "updatedAt" = NOW()
-      WHERE id = $2
-      RETURNING *
-    `, [role, id]);
-    
-    return rows[0];
-  }
-
-  async updateId(oldId: string, newId: string) {
-    // Intentamos actualizar el ID (puede fallar si hay foreign keys, pero como es cuenta nueva/admin debería estar bien)
+  async syncVerifiedUser(data: { id: string; email: string; name: string }): Promise<AuthUser> {
     try {
-      await pool.query(`UPDATE "user" SET id = $1 WHERE id = $2`, [newId, oldId]);
-    } catch (e) {
-      console.error('Error updating user ID:', e);
+      const { rows } = await pool.query(`
+        INSERT INTO "user" (id, name, email, role, "createdAt", "updatedAt")
+        VALUES ($1, $2, $3, 'USER', NOW(), NOW())
+        ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email, "updatedAt" = NOW()
+        RETURNING id, email, name, role
+      `, [data.id, data.name.trim().slice(0, 120) || data.email.split('@')[0], data.email]);
+      return rows[0];
+    } catch (error) {
+      if ((error as { code?: string }).code === '23505') {
+        throw new ConflictException('Este correo tiene un perfil anterior. El administrador debe vincularlo con su ID de Supabase.');
+      }
+      throw error;
     }
   }
 }

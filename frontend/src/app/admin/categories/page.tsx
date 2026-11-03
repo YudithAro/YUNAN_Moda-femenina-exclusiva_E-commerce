@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api";
 
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,16 +35,17 @@ interface Category {
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/categories`);
+      const res = await apiFetch(`/categories`);
       const data = await res.json();
       setCategories(data);
     } catch (error) {
@@ -53,9 +55,7 @@ export default function CategoriesPage() {
     }
   };
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+  useEffect(() => { void Promise.resolve().then(fetchCategories); }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -64,8 +64,10 @@ export default function CategoriesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
+    setIsSaving(true);
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/categories`, {
+      await apiFetch(`/categories`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -80,13 +82,13 @@ export default function CategoriesPage() {
       fetchCategories();
     } catch (error) {
       console.error("Error creating category:", error);
-    }
+    } finally { setIsSaving(false); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("¿Seguro que quieres eliminar esta categoría? (Los productos asociados podrían perder su categoría)")) return;
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/categories/${id}`, {
+      await apiFetch(`/categories/${id}`, {
         method: "DELETE",
       });
       fetchCategories();
@@ -111,8 +113,8 @@ export default function CategoriesPage() {
             </p>
           </div>
         </div>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+
+        <Dialog open={isDialogOpen} onOpenChange={open => { if (!isSaving) setIsDialogOpen(open); }}>
           <DialogTrigger render={<Button className="gap-2 bg-pink-600 hover:bg-pink-700 text-white"><Plus className="h-4 w-4" /> Añadir Categoría</Button>} />
           <DialogContent className="sm:max-w-[425px]">
             <form onSubmit={handleSubmit}>
@@ -122,16 +124,16 @@ export default function CategoriesPage() {
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
                   <label htmlFor="name" className="text-sm font-medium">Nombre</label>
-                  <Input id="name" name="name" value={formData.name} onChange={handleInputChange} required />
+                  <Input id="name" name="name" maxLength={120} value={formData.name} onChange={handleInputChange} required />
                 </div>
                 <div className="grid gap-2">
                   <label htmlFor="description" className="text-sm font-medium">Descripción</label>
-                  <Input id="description" name="description" value={formData.description} onChange={handleInputChange} />
+                  <Input id="description" name="description" maxLength={2000} value={formData.description} onChange={handleInputChange} />
                 </div>
               </div>
               <DialogFooter>
                 <DialogClose render={<Button type="button" variant="outline">Cancelar</Button>} />
-                <Button type="submit" className="bg-pink-600 hover:bg-pink-700 text-white">Guardar Categoría</Button>
+                <Button type="submit" disabled={isSaving} className="bg-pink-600 hover:bg-pink-700 text-white">Guardar Categoría</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -157,7 +159,7 @@ export default function CategoriesPage() {
               ) : categories.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-10 text-muted-foreground">
-                    No hay categorías todavía. Haz clic en "Añadir Categoría" para empezar.
+                    No hay categorías todavía. Haz clic en &quot;Añadir Categoría&quot; para empezar.
                   </TableCell>
                 </TableRow>
               ) : (
